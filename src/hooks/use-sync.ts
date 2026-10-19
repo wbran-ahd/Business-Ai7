@@ -6,7 +6,7 @@
  * and /users/{userId}/sync/state for version tracking.
  */
 import { useAuth } from "@/hooks/use-auth";
-import { db } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { handleFirestoreError, OperationType } from "@/lib/firestore-errors";
 import {
   MAX_RECORDS,
@@ -106,12 +106,14 @@ export function useSync(data: DataState) {
 
   // Firestore real-time listener for records subcollection
   useEffect(() => {
-    if (!isAuthenticated || !user?.uid) {
+    const currentUid = auth.currentUser?.uid;
+    // Only attach remote Firestore listeners if a real Firebase authenticated session exists
+    if (!isAuthenticated || !currentUid || currentUid !== user?.uid) {
       return;
     }
 
-    const recordsPath = `users/${user.uid}/records`;
-    const recordsCol = collection(db, "users", user.uid, "records");
+    const recordsPath = `users/${currentUid}/records`;
+    const recordsCol = collection(db, "users", currentUid, "records");
     const unsubscribeRecords = onSnapshot(
       recordsCol,
       (snapshot) => {
@@ -126,8 +128,8 @@ export function useSync(data: DataState) {
       },
     );
 
-    const syncPath = `users/${user.uid}/sync/state`;
-    const syncDocRef = doc(db, "users", user.uid, "sync", "state");
+    const syncPath = `users/${currentUid}/sync/state`;
+    const syncDocRef = doc(db, "users", currentUid, "sync", "state");
     const unsubscribeSync = onSnapshot(
       syncDocRef,
       (snapshot) => {
@@ -140,8 +142,8 @@ export function useSync(data: DataState) {
       },
     );
 
-    const settingsPath = `users/${user.uid}/settings/current`;
-    const settingsDocRef = doc(db, "users", user.uid, "settings", "current");
+    const settingsPath = `users/${currentUid}/settings/current`;
+    const settingsDocRef = doc(db, "users", currentUid, "settings", "current");
     const unsubscribeSettings = onSnapshot(
       settingsDocRef,
       (snapshot) => {
@@ -162,7 +164,7 @@ export function useSync(data: DataState) {
       setCloudVersion(0);
       setCloudSettings(null);
     };
-  }, [isAuthenticated, user?.uid]);
+  }, [isAuthenticated, user]);
 
   const localBudgets = useMemo<Budget[]>(() => {
     try {
@@ -216,8 +218,9 @@ export function useSync(data: DataState) {
   );
 
   const upload = useCallback(async () => {
-    if (!isAuthenticated || !user?.uid) {
-      setStatus("کلاؤڈ سینک کے لیے پہلے سائن ان کریں۔ تمام ڈیٹا ڈیوائس پر محفوظ ہے۔");
+    const currentUid = auth.currentUser?.uid;
+    if (!isAuthenticated || !currentUid || currentUid !== user?.uid) {
+      setStatus("کلاؤڈ سینک کے لیے گوگل اکاؤنٹ سے سائن ان درکار ہے۔ تمام ڈیٹا ڈیوائس پر محفوظ ہے۔");
       return false;
     }
 
@@ -250,7 +253,7 @@ export function useSync(data: DataState) {
 
         const batch = writeBatch(db);
         chunk.forEach((rec) => {
-          const recRef = doc(db, "users", user.uid, "records", String(rec.localId));
+          const recRef = doc(db, "users", currentUid, "records", String(rec.localId));
           batch.set(recRef, rec);
         });
 
@@ -259,7 +262,7 @@ export function useSync(data: DataState) {
       }
 
       // Update sync version
-      await setDoc(doc(db, "users", user.uid, "sync", "state"), {
+      await setDoc(doc(db, "users", currentUid, "sync", "state"), {
         version: newVersion,
         updatedAt: Date.now(),
       });
@@ -267,7 +270,7 @@ export function useSync(data: DataState) {
 
       // Prune old removed records
       try {
-        const existingDocs = await getDocs(collection(db, "users", user.uid, "records"));
+        const existingDocs = await getDocs(collection(db, "users", currentUid, "records"));
         const currentLocalIds = new Set(records.map((r) => String(r.localId)));
         const pruneBatch = writeBatch(db);
         let pruneCount = 0;
@@ -303,6 +306,10 @@ export function useSync(data: DataState) {
   }, [cloudVersion, data.expense, data.income, isAuthenticated, user]);
 
   const download = useCallback((): { income: Entry[]; expense: Entry[] } | null => {
+    if (!auth.currentUser) {
+      setStatus("کلاؤڈ پر کوئی ڈیٹا موجود نہیں ہے۔ تمام ریکارڈز ڈیوائس پر موجود ہیں۔");
+      return null;
+    }
     if (cloudRecords.length === 0) {
       setStatus("کلاؤڈ پر کوئی ڈیٹا موجود نہیں ہے۔");
       return null;
@@ -322,13 +329,14 @@ export function useSync(data: DataState) {
       // ignore
     }
 
-    if (!isAuthenticated || !user?.uid) {
+    const currentUid = auth.currentUser?.uid;
+    if (!isAuthenticated || !currentUid || currentUid !== user?.uid) {
       setStatus("سیٹنگز مقامی طور پر محفوظ ہو گئیں۔");
       return;
     }
 
     try {
-      const settingsRef = doc(db, "users", user.uid, "settings", "current");
+      const settingsRef = doc(db, "users", currentUid, "settings", "current");
       await setDoc(
         settingsRef,
         {
@@ -341,7 +349,7 @@ export function useSync(data: DataState) {
       setStatus("سیٹنگز محفوظ ہو گئیں۔");
     } catch (error) {
       logError("sync", "persistSettings to Firestore failed", error);
-      handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}/settings/current`);
+      handleFirestoreError(error, OperationType.WRITE, `users/${currentUid}/settings/current`);
     }
   }, [budgets, isAuthenticated, recurring, user]);
 
@@ -351,8 +359,9 @@ export function useSync(data: DataState) {
         localStorage.setItem("sauti_gemini_key", key);
         setKeySaved(true);
 
-        if (isAuthenticated && user?.uid) {
-          const settingsRef = doc(db, "users", user.uid, "settings", "current");
+        const currentUid = auth.currentUser?.uid;
+        if (isAuthenticated && currentUid && currentUid === user?.uid) {
+          const settingsRef = doc(db, "users", currentUid, "settings", "current");
           await setDoc(settingsRef, { geminiKey: key, updatedAt: Date.now() }, { merge: true });
         }
         setStatus("اے آئی کی محفوظ ہو گئی۔");
