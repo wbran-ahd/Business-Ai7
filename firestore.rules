@@ -1,0 +1,96 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Test connection doc for initial boot verification
+    match /test/connection {
+      allow get: if true;
+    }
+
+    // User profile
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && incoming().id == userId
+        && (!('name' in incoming()) || (incoming().name is string && incoming().name.size() <= 100))
+        && (!('email' in incoming()) || (incoming().email is string && incoming().email.size() <= 200))
+        && (!('isAnonymous' in incoming()) || incoming().isAnonymous is bool);
+      allow update: if isOwner(userId)
+        && incoming().id == existing().id
+        && (!('name' in incoming()) || (incoming().name is string && incoming().name.size() <= 100))
+        && (!('email' in incoming()) || (incoming().email is string && incoming().email.size() <= 200))
+        && (!('isAnonymous' in incoming()) || incoming().isAnonymous is bool);
+      allow delete: if isOwner(userId);
+
+      // Records subcollection
+      match /records/{recordId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && isValidId(recordId)
+          && incoming().localId is number
+          && (incoming().kind == 'income' || incoming().kind == 'expense')
+          && incoming().amount is number
+          && incoming().monthKey is string && incoming().monthKey.size() <= 10
+          && incoming().timestamp is number
+          && (!('detail' in incoming()) || (incoming().detail is string && incoming().detail.size() <= 500))
+          && (!('category' in incoming()) || (incoming().category is string && incoming().category.size() <= 100))
+          && (!('icon' in incoming()) || (incoming().icon is string && incoming().icon.size() <= 100))
+          && (!('account' in incoming()) || (incoming().account in ['cash', 'jazzcash', 'easypaisa', 'bank']));
+        allow update: if isOwner(userId)
+          && isValidId(recordId)
+          && incoming().localId == existing().localId
+          && (incoming().kind == 'income' || incoming().kind == 'expense')
+          && incoming().amount is number
+          && incoming().monthKey is string && incoming().monthKey.size() <= 10
+          && incoming().timestamp is number
+          && (!('detail' in incoming()) || (incoming().detail is string && incoming().detail.size() <= 500))
+          && (!('category' in incoming()) || (incoming().category is string && incoming().category.size() <= 100))
+          && (!('icon' in incoming()) || (incoming().icon is string && incoming().icon.size() <= 100))
+          && (!('account' in incoming()) || (incoming().account in ['cash', 'jazzcash', 'easypaisa', 'bank']));
+        allow delete: if isOwner(userId) && isValidId(recordId);
+      }
+
+      // Settings doc
+      match /settings/{docId} {
+        allow get: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && (!('geminiKey' in incoming()) || (incoming().geminiKey is string && incoming().geminiKey.size() <= 200));
+        allow delete: if isOwner(userId);
+      }
+
+      // Sync concurrency state
+      match /sync/{docId} {
+        allow get: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && incoming().version is number;
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}

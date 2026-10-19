@@ -1,0 +1,278 @@
+/* DO NOT CHANGE */
+@import "tailwindcss";
+@import "tw-animate-css";
+@custom-variant dark (&:is(.dark *));
+
+/* DO NOT CHANGE */
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/* CHANGE VALUES FOR THEME */
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* ============================================================
+   صوتی بقیہ (Sauti Baqaya) — Voice Finance Assistant styles
+   ============================================================ */
+.sauti-app {
+  font-family: "Noto Nastaliq Urdu", "Noto Naskh Arabic", "Noto Serif Arabic", "Segoe UI", "Arial", serif;
+  background-color: #0f172a;
+  color: #f3f4f6;
+  overflow-x: hidden;
+  position: relative;
+  /* Own stacking context so the negative-z ambient mesh stays visible */
+  isolation: isolate;
+}
+
+/* Type helpers. `.sauti-app` sets Nastaliq across the whole tree; these rules
+   are declared after it (same specificity) so a section can opt in or out —
+   the landing page body copy uses `.sans`, Urdu display text uses `.nastaliq`. */
+.sans {
+  /* Latin glyphs get the UI font; Urdu glyphs fall through to the loaded
+     Nastaliq webfont instead of relying on a system-installed Arabic font. */
+  font-family: "Segoe UI", ui-sans-serif, system-ui, -apple-system,
+    "Noto Nastaliq Urdu", "Noto Naskh Arabic", sans-serif;
+}
+
+.nastaliq {
+  font-family: "Noto Nastaliq Urdu", "Noto Naskh Arabic", "Noto Serif Arabic", serif;
+}
+
+/* The landing page keeps the theme but opts out of `overflow-x: hidden`:
+   that would turn the root into a scroll container, and `position: sticky`
+   only sticks against its nearest scroll container — so the navbar would
+   silently scroll away instead of sticking. */
+.sauti-page {
+  overflow-x: visible;
+}
+
+/* Urdu must render everywhere, including outside `.sauti-app` (the auth gate,
+   route loading states). Declared unlayered so it replaces Tailwind's `html`
+   preflight font; `font-*` utilities on child elements still win. */
+html {
+  font-family: "Segoe UI", ui-sans-serif, system-ui, -apple-system,
+    "Noto Nastaliq Urdu", "Noto Naskh Arabic", sans-serif;
+}
+
+/* Same fallback for the `font-sans` utility (used throughout the app for
+   Urdu labels): Latin glyphs are unchanged, Urdu glyphs reach the webfont. */
+.font-sans {
+  font-family: "Segoe UI", ui-sans-serif, system-ui, -apple-system,
+    "Noto Nastaliq Urdu", "Noto Naskh Arabic", sans-serif;
+}
+
+/* Ambient Mesh Gradient Background */
+.sauti-app .ambient-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background:
+    radial-gradient(circle at 10% 10%, #6c859b 0%, transparent 50%),
+    radial-gradient(circle at 90% 90%, #e16c4d 0%, transparent 60%),
+    radial-gradient(circle at 20% 90%, #221724 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, #4a6fa5 0%, transparent 50%);
+  background-size: cover;
+  z-index: -2;
+  filter: blur(35px);
+  pointer-events: none;
+}
+
+/* Glassmorphism Main Panel */
+.sauti-app .glass-panel {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(36px);
+  -webkit-backdrop-filter: blur(36px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 32px;
+  box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.4);
+}
+
+/* Notepad Style Paper inside Modal */
+.sauti-app .notepad-paper {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+/* Horizon Arc Canvas Visualizer */
+.sauti-app #horizon-canvas {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  height: 160px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Glowing Mic Button */
+.sauti-app .mic-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(15px);
+  transition: all 0.3s ease;
+}
+.sauti-app .mic-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: scale(1.05);
+}
+.sauti-app .mic-btn.listening {
+  background: rgba(14, 165, 233, 0.25);
+  border-color: rgba(14, 165, 233, 0.6);
+  box-shadow: 0 0 40px rgba(14, 165, 233, 0.5);
+  animation: sauti-pulse 1.5s infinite;
+}
+
+@keyframes sauti-pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Modal Dialogs */
+.sauti-app .modal {
+  display: flex;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(16px);
+  z-index: 50;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Scrollbar styling */
+.sauti-app ::-webkit-scrollbar {
+  width: 4px;
+}
+.sauti-app ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sauti-app ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  button:not([disabled]),
+  [role="button"]:not([disabled]) {
+    cursor: pointer;
+  }
+}
