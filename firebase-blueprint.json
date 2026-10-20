@@ -28,7 +28,7 @@
         "date": { "type": "string", "maxLength": 50 },
         "time": { "type": "string", "maxLength": 50 },
         "timestamp": { "type": "number" },
-        "account": { "type": "string", "enum": ["cash", "jazzcash", "easypaisa", "bank"] }
+        "account": { "type": "string", "enum": ["cash", "bank"] }
       },
       "required": ["localId", "kind", "amount", "monthKey", "timestamp"]
     },

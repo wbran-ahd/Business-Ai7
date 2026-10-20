@@ -25,8 +25,6 @@ const AI_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 const accountKind = v.union(
   v.literal("cash"),
-  v.literal("jazzcash"),
-  v.literal("easypaisa"),
   v.literal("bank"),
 );
 
@@ -66,7 +64,7 @@ type RecordRow = {
   date: string;
   time: string;
   timestamp: number;
-  account?: "cash" | "jazzcash" | "easypaisa" | "bank";
+  account?: "cash" | "bank";
 };
 
 function currentMonthKey(now: Date = new Date()): string {

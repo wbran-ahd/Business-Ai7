@@ -23,11 +23,9 @@ import { Onboarding } from "@/components/sauti/Onboarding";
 import { PwaStatus } from "@/components/sauti/PwaStatus";
 import { ShareCard } from "@/components/sauti/ShareCard";
 import { ExportModal } from "@/components/sauti/ExportModal";
-import { UpgradeModal } from "@/components/sauti/UpgradeModal";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useBackupReminder } from "@/hooks/use-backup-reminder";
 import { useKhata } from "@/hooks/use-khata";
-import { useLicense } from "@/hooks/use-license";
 import { usePwa } from "@/hooks/use-pwa";
 import { BRAND, supportUrl } from "@/lib/brand";
 import {
@@ -169,11 +167,9 @@ export default function SautiBaqaya() {
   const staff = useStaffLock();
   const backup = useBackupReminder();
   const pwa = usePwa();
-  const license = useLicense();
   const [onboarding, setOnboarding] = useState(initialTourState);
   const [onboardingOpen, setOnboardingOpen] = useState(() => shouldShowOnboarding(onboarding));
   const [exportOpen, setExportOpen] = useState(false);
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { notifySuccess, notifyWarning } = useNotifications();
@@ -1874,22 +1870,6 @@ export default function SautiBaqaya() {
           <ShareCard />
         </div>
 
-        {/* Pro / local payments */}
-        <div className="mb-5">
-          <h3 className="text-sm font-bold text-white/85 mb-2">
-            <i className="fas fa-crown text-amber-300 ml-1"></i> پرو (جاز کیش / ایزی پیسہ)
-          </h3>
-          <div className="flex items-center justify-between rounded-xl border border-white/10 bg-black/25 px-3 py-2">
-            <span className="text-[11px] text-white/70">{license.snapshot.label}</span>
-            <button
-              type="button"
-              onClick={() => setUpgradeOpen(true)}
-              className={`${smallBtn} bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 border-amber-500/40`}
-            >
-              پلان دیکھیں
-            </button>
-          </div>
-        </div>
 
         {/* Support & field diagnostics */}
         <div className="mb-5">
@@ -2040,14 +2020,6 @@ export default function SautiBaqaya() {
         onCsv={exportData}
       />
 
-      {/* JazzCash / EasyPaisa and activation */}
-      <UpgradeModal
-        open={upgradeOpen}
-        onClose={() => setUpgradeOpen(false)}
-        snapshot={license.snapshot}
-        installId={license.installId}
-        onActivate={license.activate}
-      />
 
       {/* Direct WhatsApp support — only when a support number is configured */}
       {supportUrl().configured && (

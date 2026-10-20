@@ -61,7 +61,7 @@ service cloud.firestore {
           && (!('detail' in incoming()) || (incoming().detail is string && incoming().detail.size() <= 500))
           && (!('category' in incoming()) || (incoming().category is string && incoming().category.size() <= 100))
           && (!('icon' in incoming()) || (incoming().icon is string && incoming().icon.size() <= 100))
-          && (!('account' in incoming()) || (incoming().account in ['cash', 'jazzcash', 'easypaisa', 'bank']));
+          && (!('account' in incoming()) || (incoming().account in ['cash', 'bank']));
         allow update: if isOwner(userId)
           && isValidId(recordId)
           && incoming().localId == existing().localId
@@ -72,7 +72,7 @@ service cloud.firestore {
           && (!('detail' in incoming()) || (incoming().detail is string && incoming().detail.size() <= 500))
           && (!('category' in incoming()) || (incoming().category is string && incoming().category.size() <= 100))
           && (!('icon' in incoming()) || (incoming().icon is string && incoming().icon.size() <= 100))
-          && (!('account' in incoming()) || (incoming().account in ['cash', 'jazzcash', 'easypaisa', 'bank']));
+          && (!('account' in incoming()) || (incoming().account in ['cash', 'bank']));
         allow delete: if isOwner(userId) && isValidId(recordId);
       }
 

@@ -35,12 +35,10 @@ const schema = defineSchema(
       date: v.string(),
       time: v.string(),
       timestamp: v.number(),
-      /** Cash / JazzCash / EasyPaisa / bank. Absent on pre-account rows. */
+      /** Cash or bank. Absent on pre-account rows. */
       account: v.optional(
         v.union(
           v.literal("cash"),
-          v.literal("jazzcash"),
-          v.literal("easypaisa"),
           v.literal("bank"),
         ),
       ),
