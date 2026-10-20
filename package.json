@@ -17,7 +17,7 @@
     "dev:preview": "node scripts/preview-dev.mjs",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b --noEmit",
-    "test": "node --test",
+    "test": "bun scripts/verify-khata.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
     "preview": "vite preview --host 0.0.0.0 --port 3000"

@@ -1,3 +1,29 @@
+# صوتی بقیہ — Urdu Voice Finance Assistant
+
+Bol kar khata: speak an income or expense in Urdu and صوتی بقیہ records it,
+confirms it aloud, watches the budget and turns the month into a report.
+
+## 🚀 Live Demo
+
+**▶ [Open the live preview](https://pv-6108b016f294-e5c31e25-e560-4e7e-aec6-ef6e78701bad.style.dev)**
+
+| Screen | Path |
+| --- | --- |
+| Landing page | [/](https://pv-6108b016f294-e5c31e25-e560-4e7e-aec6-ef6e78701bad.style.dev/) |
+| Sign in / sign up | [/auth](https://pv-6108b016f294-e5c31e25-e560-4e7e-aec6-ef6e78701bad.style.dev/auth) |
+| Dashboard (protected) | [/dashboard](https://pv-6108b016f294-e5c31e25-e560-4e7e-aec6-ef6e78701bad.style.dev/dashboard) |
+
+The preview is generated from the current `main` build. To run the same app
+locally:
+
+```bash
+bun install          # install dependencies (bun.lock is committed)
+bun run dev          # http://localhost:3000
+bun run typecheck    # tsc -b --noEmit
+bun run test         # ledger logic checks (205 assertions)
+bun run build        # production bundle in dist/
+```
+
 ## Overview
 
 This project uses the following tech stack:
@@ -23,11 +49,30 @@ This project is set up already and running on a cloud environment, as well as a 
 
 ## Environment Variables
 
-The project is set up with project specific CONVEX_DEPLOYMENT and VITE_CONVEX_URL environment variables on the client side.
+`.env.example` lists every variable. None of them are secrets at build time —
+Vite inlines `VITE_*` values into the bundle — so a preview build only needs the
+public ones.
 
-The convex server has a separate set of environment variables that are accessible by the convex backend.
+**Build-time (Vite, public):**
 
-Currently, these variables include auth-specific keys: JWKS, JWT_PRIVATE_KEY, and SITE_URL.
+| Variable | Required for a deploy? | Purpose |
+| --- | --- | --- |
+| `VITE_PUBLIC_ORIGIN` | yes for share previews | Absolute origin used for `og:url` / `og:image`; unset leaves them relative |
+| `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID` | optional | Firebase web config; falls back to the committed `firebase-applet-config.json`, so the app boots without them. Set them to point a deployment at a different Firebase project |
+| `VITE_SUPPORT_WHATSAPP` | optional | WhatsApp support line (E.164 digits, no `+`) shown in Settings |
+| `VITE_TELEMETRY_URL` | optional | Telemetry ingest endpoint; unset disables sending |
+| `VITE_VLY_APP_ID`, `VITE_VLY_MONITORING_URL` | platform-injected | Analytics/monitoring wiring for hosted builds |
+
+**Backend (Convex deployment environment):** `CONVEX_DEPLOYMENT` and
+`VITE_CONVEX_URL` on the client, plus the auth keys `JWKS`, `JWT_PRIVATE_KEY` and
+`SITE_URL`. The Convex functions also read:
+
+| Variable | Purpose |
+| --- | --- |
+| `SAUTI_KEY_SECRET` | AES-GCM key that encrypts the stored Gemini API key; unset stores it unencrypted |
+| `VLY_INTEGRATION_KEY` | VLY integration key for email OTP delivery and AI/payment calls |
+| `VLY_INTEGRATION_BASE_URL` | Integration gateway, defaults to `https://integrations.vly.ai` |
+| `CONVEX_SITE_URL` | Auth token issuer; must match the deployment's site proxy |
 
 ## Continuous integration
 
@@ -36,7 +81,12 @@ Currently, these variables include auth-specific keys: JWKS, JWT_PRIVATE_KEY, an
 | Job | Command | Requires |
 | --- | --- | --- |
 | Typecheck | `bun install --frozen-lockfile`, then `bun run typecheck` | nothing |
+| Ledger logic tests | `bun install --frozen-lockfile`, then `bun run test` | nothing |
 | Convex push | `bun install --frozen-lockfile`, then `bunx convex deploy` | the `CONVEX_DEPLOY_KEY` repository secret |
+
+`bun run test` runs `scripts/verify-khata.ts`: 205 assertions over amounts,
+budgets, CSV round-trips, carry-forward ledgers and formatting. It needs no
+deployment, so it gates every push to `main` as well as every pull request.
 
 `src/convex/_generated` is committed on purpose: it holds the Convex API types that
 the app and the typecheck import, and nothing typechecks without it. `convex dev`
