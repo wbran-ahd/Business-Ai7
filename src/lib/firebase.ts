@@ -10,6 +10,7 @@ export interface FirebaseAppConfig {
   storageBucket: string;
   messagingSenderId: string;
   appId: string;
+  measurementId?: string;
   firestoreDatabaseId?: string;
 }
 
@@ -20,7 +21,8 @@ export const firebaseConfig: FirebaseAppConfig = {
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || appletConfig.storageBucket || "",
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || appletConfig.messagingSenderId || "",
   appId: import.meta.env.VITE_FIREBASE_APP_ID || appletConfig.appId || "",
-  firestoreDatabaseId: appletConfig.firestoreDatabaseId || undefined,
+  measurementId: (appletConfig as { measurementId?: string }).measurementId || undefined,
+  firestoreDatabaseId: appletConfig.firestoreDatabaseId?.trim() || undefined,
 };
 
 export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
