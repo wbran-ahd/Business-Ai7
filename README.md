@@ -13,8 +13,9 @@ confirms it aloud, watches the budget and turns the month into a report.
 | Sign in / sign up | [/auth](https://pv-6108b016f294-76340e57-13f0-4915-82b8-679cccb24949.style.dev/auth) |
 | Dashboard (protected) | [/dashboard](https://pv-6108b016f294-76340e57-13f0-4915-82b8-679cccb24949.style.dev/dashboard) |
 
-The preview is generated from the current `main` build. To run the same app
-locally:
+The preview host is tied to the workspace session that served it, so it can
+return `Preview unavailable` once that session ends. Running locally is the
+reliable route; the preview is generated from the current `main` build.
 
 ```bash
 bun install          # install dependencies (bun.lock is committed)
