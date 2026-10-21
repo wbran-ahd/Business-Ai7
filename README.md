@@ -5,24 +5,24 @@ confirms it aloud, watches the budget and turns the month into a report.
 
 ## 🚀 Live Demo
 
-**▶ [Open the live preview](https://pv-6108b016f294-76340e57-13f0-4915-82b8-679cccb24949.style.dev)**
+**▶ [Open the live preview](https://site-f9ff23f69f4a4445a559ab1a2a03f28f.freebuff.page)**
 
 | Screen | Path |
 | --- | --- |
-| Landing page | [/](https://pv-6108b016f294-76340e57-13f0-4915-82b8-679cccb24949.style.dev/) |
-| Sign in / sign up | [/auth](https://pv-6108b016f294-76340e57-13f0-4915-82b8-679cccb24949.style.dev/auth) |
-| Dashboard (protected) | [/dashboard](https://pv-6108b016f294-76340e57-13f0-4915-82b8-679cccb24949.style.dev/dashboard) |
+| Landing page | [/](https://site-f9ff23f69f4a4445a559ab1a2a03f28f.freebuff.page/) |
+| Sign in / sign up | [/auth](https://site-f9ff23f69f4a4445a559ab1a2a03f28f.freebuff.page/auth) |
+| Dashboard (protected) | [/dashboard](https://site-f9ff23f69f4a4445a559ab1a2a03f28f.freebuff.page/dashboard) |
 
-The preview host is tied to the workspace session that served it, so it can
-return `Preview unavailable` once that session ends. Running locally is the
-reliable route; the preview is generated from the current `main` build.
+The deployment is the production bundle of `main`, served as a static SPA with
+`index.html` as the fallback for unknown paths; the static worker and deploy
+manifest live in [`deploy/`](deploy/). Build it the same way locally:
 
 ```bash
 bun install          # install dependencies (bun.lock is committed)
 bun run dev          # http://localhost:3000
 bun run typecheck    # tsc -b --noEmit
 bun run test         # ledger logic checks (205 assertions)
-bun run build        # production bundle in dist/
+VITE_PUBLIC_ORIGIN=https://<your-origin> bun run build   # production bundle in dist/
 ```
 
 ## Overview
