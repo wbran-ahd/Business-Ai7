@@ -5,13 +5,13 @@ confirms it aloud, watches the budget and turns the month into a report.
 
 ## 🚀 Live Demo
 
-**▶ [Open the live preview](https://pv-6108b016f294-e5c31e25-e560-4e7e-aec6-ef6e78701bad.style.dev)**
+**▶ [Open the live preview](https://pv-6108b016f294-76340e57-13f0-4915-82b8-679cccb24949.style.dev)**
 
 | Screen | Path |
 | --- | --- |
-| Landing page | [/](https://pv-6108b016f294-e5c31e25-e560-4e7e-aec6-ef6e78701bad.style.dev/) |
-| Sign in / sign up | [/auth](https://pv-6108b016f294-e5c31e25-e560-4e7e-aec6-ef6e78701bad.style.dev/auth) |
-| Dashboard (protected) | [/dashboard](https://pv-6108b016f294-e5c31e25-e560-4e7e-aec6-ef6e78701bad.style.dev/dashboard) |
+| Landing page | [/](https://pv-6108b016f294-76340e57-13f0-4915-82b8-679cccb24949.style.dev/) |
+| Sign in / sign up | [/auth](https://pv-6108b016f294-76340e57-13f0-4915-82b8-679cccb24949.style.dev/auth) |
+| Dashboard (protected) | [/dashboard](https://pv-6108b016f294-76340e57-13f0-4915-82b8-679cccb24949.style.dev/dashboard) |
 
 The preview is generated from the current `main` build. To run the same app
 locally:
