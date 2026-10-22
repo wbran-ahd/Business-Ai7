@@ -35,8 +35,7 @@ This project uses the following tech stack:
 - Tailwind v4 (for styling)
 - Shadcn UI (for UI components library)
 - Lucide Icons (for icons)
-- Convex (for backend & database)
-- Convex Auth (for authentication)
+- Firebase (Firestore for cloud backup & sync, Firebase Auth for authentication)
 - Framer Motion (for animations)
 - Three js (for 3d models)
 
@@ -46,7 +45,7 @@ Use bun for the package manager.
 
 ## Setup
 
-This project is set up already and running on a cloud environment, as well as a convex development in the sandbox.
+This project is set up already and running on a cloud environment.
 
 ## Environment Variables
 
@@ -64,16 +63,18 @@ public ones.
 | `VITE_TELEMETRY_URL` | optional | Telemetry ingest endpoint; unset disables sending |
 | `VITE_VLY_APP_ID`, `VITE_VLY_MONITORING_URL` | platform-injected | Analytics/monitoring wiring for hosted builds |
 
-**Backend (Convex deployment environment):** `CONVEX_DEPLOYMENT` and
-`VITE_CONVEX_URL` on the client, plus the auth keys `JWKS`, `JWT_PRIVATE_KEY` and
-`SITE_URL`. The Convex functions also read:
+**Cloud (Firebase):** the Firebase web config comes from the `VITE_FIREBASE_*`
+variables above, falling back to the committed `firebase-applet-config.json`.
+Firestore is the only remote store, so there is no separate server deployment
+to configure or push to.
+
+**Server-side (build scripts and integrations only):**
 
 | Variable | Purpose |
 | --- | --- |
 | `SAUTI_KEY_SECRET` | AES-GCM key that encrypts the stored Gemini API key; unset stores it unencrypted |
-| `VLY_INTEGRATION_KEY` | VLY integration key for email OTP delivery and AI/payment calls |
+| `VLY_INTEGRATION_KEY` | VLY integration key for AI and payment calls |
 | `VLY_INTEGRATION_BASE_URL` | Integration gateway, defaults to `https://integrations.vly.ai` |
-| `CONVEX_SITE_URL` | Auth token issuer; must match the deployment's site proxy |
 
 ## Continuous integration
 
@@ -83,27 +84,10 @@ public ones.
 | --- | --- | --- |
 | Typecheck | `bun install --frozen-lockfile`, then `bun run typecheck` | nothing |
 | Ledger logic tests | `bun install --frozen-lockfile`, then `bun run test` | nothing |
-| Convex push | `bun install --frozen-lockfile`, then `bunx convex deploy` | the `CONVEX_DEPLOY_KEY` repository secret |
 
 `bun run test` runs `scripts/verify-khata.ts`: 205 assertions over amounts,
 budgets, CSV round-trips, carry-forward ledgers and formatting. It needs no
 deployment, so it gates every push to `main` as well as every pull request.
-
-`src/convex/_generated` is committed on purpose: it holds the Convex API types that
-the app and the typecheck import, and nothing typechecks without it. `convex dev`
-and `convex deploy` regenerate it, so include any updates to it with changes to
-`src/convex`.
-
-The Convex push needs a Convex **preview** deploy key (dashboard → your project →
-Settings → Deploy Keys → Preview), stored in GitHub under Settings → Secrets and
-variables → Actions as `CONVEX_DEPLOY_KEY`. A preview key makes each pull request
-push to its own branch-named preview deployment; a production deploy key would
-push every pull request straight to production.
-
-This project has no cloud Convex deployment yet, so until that secret exists the
-Convex push job skips its push step and writes a warning to the run summary — no
-functions or schema are pushed, and the summary says so rather than reporting a
-pass.
 
 
 # Using Authentication (Important!)
@@ -112,17 +96,18 @@ You must follow these conventions when using authentication.
 
 ## Auth is already set up.
 
-All convex authentication functions are already set up. The auth currently uses email OTP and anonymous users, but can support more.
+Authentication runs on **Firebase Auth**. The sign-in surface is
+`src/hooks/use-auth.ts`, which wraps `onAuthStateChanged` and exposes Google,
+anonymous (guest) and email sign-in. The Firebase app itself is initialised in
+`src/lib/firebase.ts`.
 
-The email OTP configuration is defined in `src/convex/auth/emailOtp.ts`. DO NOT MODIFY THIS FILE.
+Google sign-in uses `signInWithPopup` with `GoogleAuthProvider`; guest sign-in
+uses `signInAnonymously` and falls back to a local session in `localStorage`
+when Firebase is unreachable. Firestore access is scoped per user under
+`users/{uid}/...`, and `src/lib/firestore-errors.ts` centralises the error
+shape.
 
-Also, DO NOT MODIFY THESE AUTH FILES: `src/convex/auth.config.ts` and `src/convex/auth.ts`.
-
-## Using Convex Auth on the backend
-
-On the `src/convex/users.ts` file, you can use the `getCurrentUser` function to get the current user's data.
-
-## Using Convex Auth on the frontend
+## Using Auth in your components
 
 The `/auth` page is already set up to use auth. Navigate to `/auth` for all log in / sign up sequences.
 
@@ -312,58 +297,62 @@ Remember to import { toast } from "sonner". Usage: `toast("Event has been create
 Always ensure your larger dialogs have a scroll in its content to ensure that its content fits the screen size. Make sure that the content is not cut off from the screen.
 
 Ideally, instead of using a new page, use a Dialog instead. 
+# Using the Firebase backend
 
-# Using the Convex backend
+This app has no server-side backend of its own. Firebase is the backend: Firebase
+Auth handles identity and Firestore holds the cloud copy of the ledger. There is
+no schema file to maintain and no deployment to push — Firestore rules govern
+access and are checked in at [`firestore.rules`](firestore.rules).
 
-You will be implementing the convex backend. Follow your knowledge of convex and the documentation to implement the backend.
+## Data model
 
-## The Convex Schema
+Everything is nested under the signed-in user's document, so one user can never
+read another user's rows:
 
-You must correctly follow the convex schema implementation.
+| Path | Holds | Written by |
+| --- | --- | --- |
+| `users/{uid}` | profile (name, email) | `src/hooks/use-auth.ts` |
+| `users/{uid}/records` | income/expense ledger entries | `src/hooks/use-sync.ts` |
+| `users/{uid}/settings/current` | budgets, recurring rules, AI key | `src/hooks/use-sync.ts` |
+| `users/{uid}/sync/state` | sync version token | `src/hooks/use-sync.ts` |
+| `users/{uid}/parties` | customers and suppliers | `src/hooks/use-parties.ts` |
+| `users/{uid}/partyTxns` | shop (party) transactions | `src/hooks/use-parties.ts` |
 
-The schema is defined in `src/convex/schema.ts`.
+The local device stays the source of truth. `src/lib/khata.ts` holds the ledger
+in `localStorage` and `src/lib/parties.ts` holds the party book; Firestore is a
+backup and cross-device mirror, not the primary store.
 
-Do not include the `_id` and `_creationTime` fields in your queries (it is included by default for each table).
-Do not index `_creationTime` as it is indexed for you. Never have duplicate indexes.
+## Local-first conventions
 
+- **Read from local state, write through.** Update the React state first, then
+  push the same value to Firestore. Never block the UI on a network round-trip.
+- **Write in batches.** Firestore accepts at most 500 operations per
+  `writeBatch`; `src/hooks/use-sync.ts` chunks uploads at 250 so a large ledger
+  cannot overflow the limit.
+- **Treat a cloud write as best-effort.** A failed sync must not lose the
+  user's entry. Log it and let the next upload retry.
+- **Cap what you send.** `MAX_RECORDS` in `src/lib/khata.ts` bounds how many
+  entries leave the device.
 
-## Convex Actions: Using CRUD operations
+## Cloud sync
 
-When running anything that involves external connections, you must use a convex action with "use node" at the top of the file.
+`useSync` is the single entry point for everything that touches the cloud:
 
-You cannot have queries or mutations in the same file as a "use node" action file. Thus, you must use pre-built queries and mutations in other files.
+- `upload()` — writes the local ledger to `users/{uid}/records` in chunks, then
+  bumps the version in `users/{uid}/sync/state`, then prunes rows the device no
+  longer has.
+- `download()` — reads the cloud copy back into the local ledger.
+- `persistSettings()` — saves budgets and recurring rules.
+- `saveGeminiKey()` — stores the AI key locally, and in
+  `users/{uid}/settings/current` when signed in.
 
-You can also use the pre-installed internal crud functions for the database:
+`useParties` mirrors the same pattern for the customer/supplier book, using
+`onSnapshot` for live updates.
 
-```ts
-// in convex/users.ts
-import { crud } from "convex-helpers/server/crud";
-import schema from "./schema.ts";
+## Security rules
 
-export const { create, read, update, destroy } = crud(schema, "users");
-
-// in some file, in an action:
-const user = await ctx.runQuery(internal.users.read, { id: userId });
-
-await ctx.runMutation(internal.users.update, {
-  id: userId,
-  patch: {
-    status: "inactive",
-  },
-});
-```
-
-
-## Common Convex Mistakes To Avoid
-
-When using convex, make sure:
-- Document IDs are referenced as `_id` field, not `id`.
-- Document ID types are referenced as `Id<"TableName">`, not `string`.
-- Document object types are referenced as `Doc<"TableName">`.
-- Keep schemaValidation to false in the schema file.
-- You must correctly type your code so that it passes the type checker.
-- You must handle null / undefined cases of your convex queries for both frontend and backend, or else it will throw an error that your data could be null or undefined.
-- Always use the `@/folder` path, with `@/convex/folder/file.ts` syntax for importing convex files.
-- This includes importing generated files like `@/convex/_generated/server`, `@/convex/_generated/api`
-- Remember to import functions like useQuery, useMutation, useAction, etc. from `convex/react`
-- NEVER have return type validators.
+[`firestore.rules`](firestore.rules) is the access control for the whole app.
+`@firebase/eslint-plugin-security-rules` runs as part of `bun run lint`, so rule
+regressions are caught before they ship. When you add a collection, add its
+rule in the same change — a missing rule is a data leak, and a rule that does
+not match the client path is a silent sync failure.

@@ -1,7 +1,6 @@
 /**
  * `useSync` — cloud backup, settings and sync tracking via Firebase Firestore.
  *
- * Replaces Convex queries/mutations with Firebase Firestore Modular SDK v10+.
  * Uses /users/{userId}/records subcollection, /users/{userId}/settings/current,
  * and /users/{userId}/sync/state for version tracking.
  */

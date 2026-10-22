@@ -122,7 +122,7 @@ export const PREF_STORAGE_KEY = "sautiBaqayaPrefs";
 /* ------------------------------------------------------------------ */
 /** One crore — anything above this is treated as a typo. */
 export const MAX_AMOUNT = 100_000_000;
-/** Hard cap so a huge ledger can never blow a single Convex mutation. */
+/** Hard cap so a huge ledger can never blow a single sync batch. */
 export const MAX_RECORDS = 1000;
 
 export const MONTH_NAMES: Record<string, string> = {
