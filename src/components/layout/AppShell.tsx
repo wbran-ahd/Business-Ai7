@@ -158,10 +158,10 @@ export function AppShell({
   );
 
   return (
-    <div dir="rtl" className="sauti-app min-h-screen">
+    <div dir="rtl" className="sauti-app min-h-dvh">
       <div className="ambient-bg" />
 
-      <div className="relative z-10 flex min-h-screen w-full">
+      <div className="relative z-10 flex min-h-dvh w-full">
         {/* Sidebar — desktop */}
         <aside className="hidden w-64 shrink-0 flex-col gap-5 border-l border-white/10 bg-black/25 p-4 backdrop-blur-xl lg:flex">
           {renderBrand}
@@ -174,7 +174,7 @@ export function AppShell({
 
         <div className="flex min-w-0 flex-1 flex-col">
           {/* Top bar — mobile */}
-          <header className="flex items-center justify-between gap-3 border-b border-white/10 bg-slate-950/70 px-4 py-3 backdrop-blur-xl lg:hidden">
+          <header className="flex items-center justify-between gap-3 border-b border-white/10 bg-slate-950/70 px-4 pb-3 pt-[calc(env(safe-area-inset-top)_+_0.75rem)] backdrop-blur-xl lg:hidden">
             {renderBrand}
             <button
               type="button"
@@ -186,7 +186,12 @@ export function AppShell({
             </button>
           </header>
 
-          <main className="flex flex-1 items-center justify-center p-3 sm:p-6">
+          {/* Full-bleed content well: no gutters here at all. The panel stretches
+              to every remaining pixel of the viewport, edge to edge. The content
+              gutter and the safe-area handling live *inside* the panel so the
+              glass reaches the true display bounds while content stays clear of
+              notches, rounded corners and the iOS home bar. */}
+          <main className="flex flex-1 items-stretch justify-center">
             {children}
           </main>
         </div>

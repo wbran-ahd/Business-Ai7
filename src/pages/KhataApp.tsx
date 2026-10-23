@@ -571,8 +571,21 @@ export default function SautiBaqaya() {
       onNavigate={handleNavigate}
       onSignOut={() => void handleSignOut()}
     >
-      {/* Main Glass Panel */}
-      <div className="glass-panel my-auto flex w-full max-w-xl min-h-[78vh] flex-col relative overflow-hidden lg:min-h-[88vh]">
+      {/* Main Glass Panel — edge-to-edge with square outer corners. The width
+          cap and the outer padding wrapper used to box it inside the screen,
+          leaving ambient background and curved gaps at the device corners.
+          Cap, wrapper gutters and the outer border radius are all gone: the
+          glass now meets the exact mobile screen boundary with sharp corners,
+          while the same gutter sits *inside* the panel (identical values), so
+          every text box, metric card and button keeps its exact screen
+          position. Height stays automatic: content taller than the screen
+          grows the panel and scrolls the page rather than being clipped.
+          The radius override is inline because `.sauti-app .glass-panel`
+          (specificity 0-2-0, unlayered) beats any single-class utility. */}
+      <div
+        style={{ borderRadius: 0 }}
+        className="glass-panel relative flex w-full min-w-0 flex-col overflow-hidden pt-2.5 pb-[calc(env(safe-area-inset-bottom)_+_0.625rem)] pl-[max(env(safe-area-inset-left),0.625rem)] pr-[max(env(safe-area-inset-right),0.625rem)] sm:p-6"
+      >
         {/* Header Section */}
         <LedgerHeader
           activeMonth={khata.activeMonth}
@@ -593,48 +606,52 @@ export default function SautiBaqaya() {
           onExportCsv={exportData}
         />
 
-        {/* Center content & glowing mic section */}
-        <LedgerVoiceCenter
-          pwa={pwa}
-          backupDue={backup.due}
-          onBackup={() => {
-            exportData();
-            notifySuccess("بیک اپ ڈاؤن لوڈ ہو گیا", "اگلی یاد دہانی سات دن بعد آئے گی۔");
-          }}
-          onSnoozeBackup={() => backup.snooze()}
-          budgetDismissed={budgetDismissed}
-          budgetAlerts={budgetAlerts}
-          onDismissBudgetAlerts={() => setBudgetDismissed(true)}
-          totals={khata.totals}
-          digitStyle={khata.prefs.digitStyle}
-          isCurrentMonth={khata.isCurrentMonth}
-          onOpenModal={openModal}
-          transcript={voice.transcript}
-          onUndo={handleUndoButton}
-          prefs={khata.prefs}
-          onQuickCommit={(input: {
-            type: EntryType;
-            amount: number;
-            detail: string;
-            category?: string;
-            account?: any;
-          }) => {
-            const ok = khata.addEntry({
-              type: input.type,
-              amount: input.amount,
-              detail: input.detail,
-              category: input.category,
-              account: input.account,
-            });
-            if (ok) {
-              track("entry_quick", { type: input.type });
-              afterEntryAdded(input.type, input.amount, input.detail);
-            }
-            return ok;
-          }}
-          voiceListening={voice.listening}
-          onToggleVoice={voice.toggle}
-        />
+        {/* Center content & glowing mic section — this wrapper fills the
+            remaining panel height and centres the block vertically, so the
+            mic sits in the middle of the screen instead of near the top. */}
+        <div className="flex flex-1 flex-col justify-center">
+          <LedgerVoiceCenter
+            pwa={pwa}
+            backupDue={backup.due}
+            onBackup={() => {
+              exportData();
+              notifySuccess("بیک اپ ڈاؤن لوڈ ہو گیا", "اگلی یاد دہانی سات دن بعد آئے گی۔");
+            }}
+            onSnoozeBackup={() => backup.snooze()}
+            budgetDismissed={budgetDismissed}
+            budgetAlerts={budgetAlerts}
+            onDismissBudgetAlerts={() => setBudgetDismissed(true)}
+            totals={khata.totals}
+            digitStyle={khata.prefs.digitStyle}
+            isCurrentMonth={khata.isCurrentMonth}
+            onOpenModal={openModal}
+            transcript={voice.transcript}
+            onUndo={handleUndoButton}
+            prefs={khata.prefs}
+            onQuickCommit={(input: {
+              type: EntryType;
+              amount: number;
+              detail: string;
+              category?: string;
+              account?: any;
+            }) => {
+              const ok = khata.addEntry({
+                type: input.type,
+                amount: input.amount,
+                detail: input.detail,
+                category: input.category,
+                account: input.account,
+              });
+              if (ok) {
+                track("entry_quick", { type: input.type });
+                afterEntryAdded(input.type, input.amount, input.detail);
+              }
+              return ok;
+            }}
+            voiceListening={voice.listening}
+            onToggleVoice={voice.toggle}
+          />
+        </div>
       </div>
 
       {/* Notepad Details Modal */}
