@@ -9,7 +9,7 @@
  * the network.
  */
 
-import type { Functions, HttpsCallable } from "firebase/functions";
+import type { Functions } from "firebase/functions";
 
 /** Every callable is deployed to this region (see `functions/src/config.ts`). */
 export const ACTIVATION_REGION = "asia-south1";
@@ -60,27 +60,25 @@ function runtime(): Promise<Functions> {
   return runtimePromise;
 }
 
-async function callable<T>(name: string): Promise<HttpsCallable<unknown, T>> {
+/** Runs any callable in the activation region and resolves its payload. */
+export async function callFunction<T>(name: string, data: unknown = {}): Promise<T> {
   const [{ httpsCallable }, functions] = await Promise.all([
     import("firebase/functions"),
     runtime(),
   ]);
-  return httpsCallable<unknown, T>(functions, name);
+  const response = await httpsCallable<unknown, T>(functions, name)(data);
+  return response.data;
 }
 
 export async function activateCode(
   code: string,
   deviceId: string,
 ): Promise<ActivateResult> {
-  const call = await callable<ActivateResult>("activate");
-  const response = await call({ code, deviceId });
-  return response.data;
+  return callFunction<ActivateResult>("activate", { code, deviceId });
 }
 
 export async function checkLicense(): Promise<CheckStatusResult> {
-  const call = await callable<CheckStatusResult>("checkStatus");
-  const response = await call({});
-  return response.data;
+  return callFunction<CheckStatusResult>("checkStatus");
 }
 
 /* ------------------------------------------------------------------ */

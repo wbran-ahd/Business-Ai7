@@ -1,6 +1,8 @@
 import '@vly-ai/integrations';
 import { Toaster } from "@/components/ui/sonner";
 import { RequireAuth } from "@/components/RequireAuth";
+// Small guard (uid check only) — eager so the route can never flash unguarded.
+import { AdminRoute } from "./pages/admin/components/AdminRoute";
 import { VlyToolbar } from "../vly-toolbar-readonly.tsx";
 import { applyShareMeta } from "./lib/brand";
 import React, { StrictMode, useEffect, lazy, Suspense } from "react";
@@ -22,6 +24,8 @@ initAnalytics();
 const Landing = lazy(() => import("./pages/Landing.tsx"));
 const Dashboard = lazy(() => import("./pages/Dashboard.tsx"));
 const Activation = lazy(() => import("./pages/Activation.tsx"));
+const AdminLogin = lazy(() => import("./pages/admin/AdminLogin.tsx"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 
 // Simple loading fallback for route transitions
@@ -129,6 +133,16 @@ createRoot(document.getElementById("root")!).render(
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/activate" element={<Activation />} />
+            {/* Admin is uid-guarded, never licence-gated: see AdminRoute. */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <AdminDashboard />
+                </AdminRoute>
+              }
+            />
             <Route
               path="/dashboard"
               element={
