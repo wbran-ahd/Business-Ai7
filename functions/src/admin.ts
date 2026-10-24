@@ -302,10 +302,33 @@ export const extendCode = onCall({ region: REGION }, async (request) => {
   const licenseDays =
     input.licenseDays !== null ? input.licenseDays : code.license_days;
 
-  await ref.update({
-    code_expires_at: codeExpiresAt,
-    license_days: licenseDays,
-    updated_at: now,
+  const previousExpiry = code.code_expires_at;
+
+  const result = await db().runTransaction(async (tx) => {
+    const licences = await licenseDocsForCode(tx, input.codeId);
+    // Whatever the voucher gained, its already-issued licences gain too: the
+    // holder must not keep running on the old date. Never-expiring licences
+    // (`null`) and revoked ones are left alone.
+    const delta =
+      codeExpiresAt !== null ? codeExpiresAt - (previousExpiry ?? now) : 0;
+    let extended = 0;
+    if (delta !== 0) {
+      for (const licence of licences) {
+        const data = licence.data();
+        if (data.revoked || data.license_expires_at === null) continue;
+        tx.update(licence.ref, {
+          license_expires_at: data.license_expires_at + delta,
+          updated_at: now,
+        });
+        extended += 1;
+      }
+    }
+    tx.update(ref, {
+      code_expires_at: codeExpiresAt,
+      license_days: licenseDays,
+      updated_at: now,
+    });
+    return { extended };
   });
 
   await writeAudit(db(), {
@@ -315,7 +338,7 @@ export const extendCode = onCall({ region: REGION }, async (request) => {
     actorRole: "admin",
     actorIp: ip,
     codeId: input.codeId,
-    detail: `code_expires_at=${codeExpiresAt ?? "none"} license_days=${licenseDays ?? "none"}`,
+    detail: `code_expires_at=${codeExpiresAt ?? "none"} license_days=${licenseDays ?? "none"} extended_licences=${result.extended}`,
   });
 
   return {
@@ -323,5 +346,6 @@ export const extendCode = onCall({ region: REGION }, async (request) => {
     codeId: input.codeId,
     code_expires_at: codeExpiresAt,
     license_days: licenseDays,
+    extendedLicences: result.extended,
   };
 });

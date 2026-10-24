@@ -362,6 +362,37 @@ async function main() {
       errorCode(nonAdminExtend) === GRPC.PERMISSION_DENIED,
       JSON.stringify(nonAdminExtend.error),
     );
+
+    // Decision 2: moving the voucher must move the holder's licence with it.
+    const holderBefore = (
+      await db.collection("licenses").doc("user-alpha").get()
+    ).data();
+    const extendHolder = await call(
+      "extendCode",
+      { codeId: first.codeId, extendByDays: 30 },
+      adminToken,
+    );
+    const holderAfter = (
+      await db.collection("licenses").doc("user-alpha").get()
+    ).data();
+    check(
+      "extendCode reports the licences it moved",
+      extendHolder.ok && extendHolder.result.extendedLicences === 1,
+      JSON.stringify(extendHolder.error ?? extendHolder.result),
+    );
+    check(
+      "holder's license_expires_at grew by exactly 30d",
+      holderAfter.license_expires_at - holderBefore.license_expires_at ===
+        30 * DAY_MS,
+      `delta=${holderAfter.license_expires_at - holderBefore.license_expires_at}`,
+    );
+    check(
+      "voucher expiry grew by the same 30d",
+      (await db.collection("codes").doc(first.codeId).get()).data()
+        .code_expires_at -
+        codeExpiresAt ===
+        30 * DAY_MS,
+    );
   } else {
     check("extendCode setup", false, JSON.stringify(extendable.error));
   }
@@ -383,6 +414,9 @@ async function main() {
   );
 
   console.log("\n— 10. resetActivation → freed for a new phone —");
+  const codeBeforeReset = (
+    await db.collection("codes").doc(first.codeId).get()
+  ).data();
   const reset = await call(
     "resetActivation",
     { codeId: first.codeId, reason: "phone lost" },
@@ -407,7 +441,7 @@ async function main() {
   );
   check(
     "voucher expiry untouched by reset (bug 2)",
-    freedCode.code_expires_at === codeExpiresAt,
+    freedCode.code_expires_at === codeBeforeReset.code_expires_at,
   );
 
   const deltaToken = await mintToken("user-delta");

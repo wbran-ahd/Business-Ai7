@@ -42,6 +42,12 @@ import {
   readUserMode,
 } from "../src/lib/mode";
 import { useMode } from "../src/hooks/use-mode";
+import {
+  activationErrorMessage,
+  CODE_PATTERN,
+  formatCode,
+} from "../src/lib/activation";
+import { DEVICE_ID_PATTERN, getDeviceId } from "../src/lib/device-id";
 
 let passed = 0;
 const failures: string[] = [];
@@ -282,6 +288,63 @@ function verifyHook(): void {
 }
 
 /* ------------------------------------------------------------------ */
+/* Activation (phase 5)                                                */
+/* ------------------------------------------------------------------ */
+
+function verifyActivation(): void {
+  equal(
+    "Activation: plain payload formats",
+    formatCode("SAUTI1234ABCD5678"),
+    "SAUTI-1234-ABCD-5678",
+  );
+  equal(
+    "Activation: scanned payload formats (case + spaces)",
+    formatCode("sauti 1234 abcd 5678"),
+    "SAUTI-1234-ABCD-5678",
+  );
+  equal(
+    "Activation: unrelated text is not mangled into a code",
+    formatCode("hello world"),
+    "HELLOWORLD",
+  );
+  check(
+    "Activation: formatted code satisfies the server rule",
+    CODE_PATTERN.test(formatCode("SAUTI1234ABCD5678")),
+  );
+  check(
+    "Activation: a truncated code fails the server rule",
+    !CODE_PATTERN.test(formatCode("SAUTI1234")),
+  );
+
+  equal(
+    "Activation: the server's own Urdu message wins",
+    activationErrorMessage({ code: "functions/not-found", message: "یہ کوڈ درست نہیں ہے۔" }),
+    "یہ کوڈ درست نہیں ہے۔",
+  );
+  const internal = activationErrorMessage({ code: "functions/internal", message: "INTERNAL" });
+  check(
+    "Activation: bare SDK statuses are replaced with readable copy",
+    internal !== "INTERNAL" && internal.length > 0,
+    internal,
+  );
+
+  // The device id is persisted; give the hook the storage it expects.
+  const store = new Map<string, string>();
+  const holder = globalThis as unknown as { localStorage?: unknown };
+  holder.localStorage = {
+    getItem: (key: string) => store.get(key) ?? null,
+    setItem: (key: string, value: string) => void store.set(key, value),
+  };
+  try {
+    const first = getDeviceId();
+    equal("Device id: stable across calls", getDeviceId(), first);
+    check("Device id: satisfies the server pattern", DEVICE_ID_PATTERN.test(first));
+  } finally {
+    delete holder.localStorage;
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* Run                                                                 */
 /* ------------------------------------------------------------------ */
 
@@ -291,6 +354,7 @@ async function main(): Promise<void> {
   verifyMode();
   await verifyModeReader();
   verifyHook();
+  verifyActivation();
 
   console.log(`\n${passed} checks passed, ${failures.length} failed.`);
   if (failures.length > 0) {
