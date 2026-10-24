@@ -17,3 +17,4 @@ public/assets/aistudio/
 # bypass every Firestore rule, so it must never reach a commit or an archive.
 .firebase/
 *-firebase-adminsdk-*.json
+/freebuff-sites-build/
