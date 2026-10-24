@@ -72,6 +72,7 @@ to configure or push to.
 | Variable | Purpose |
 | --- | --- |
 | `SAUTI_KEY_SECRET` | AES-GCM key that encrypts the stored Gemini API key; unset stores it unencrypted |
+| `ACTIVATION_PEPPER` | Cloud Functions secret that peppers voucher hashes and activation tokens (`firebase functions:secrets:set ACTIVATION_PEPPER`) |
 | `VLY_INTEGRATION_KEY` | VLY integration key for AI and payment calls |
 | `VLY_INTEGRATION_BASE_URL` | Integration gateway, defaults to `https://integrations.vly.ai` |
 
@@ -239,10 +240,12 @@ Always ensure your larger dialogs have a scroll in its content to ensure that it
 Ideally, instead of using a new page, use a Dialog instead. 
 # Using the Firebase backend
 
-This app has no server-side backend of its own. Firebase is the backend: Firebase
-Auth handles identity and Firestore holds the cloud copy of the ledger. There is
-no schema file to maintain and no deployment to push — Firestore rules govern
-access and are checked in at [`firestore.rules`](firestore.rules).
+This app has no HTTP server of its own. Firebase is the backend: Firebase
+Auth handles identity, Firestore holds the cloud copy of the ledger, and
+[`functions/`](functions/) holds the callable activation/licensing functions
+(`activate`, `checkStatus` and the admin callables) deployed through
+[`firebase.json`](firebase.json). Firestore rules govern access and are checked
+in at [`firestore.rules`](firestore.rules).
 
 ## Data model
 
@@ -257,6 +260,10 @@ read another user's rows:
 | `users/{uid}/sync/state` | sync version token | `src/hooks/use-sync.ts` |
 | `users/{uid}/parties` | customers and suppliers | `src/hooks/use-parties.ts` |
 | `users/{uid}/partyTxns` | shop (party) transactions | `src/hooks/use-parties.ts` |
+
+Licensing lives at the database root and is written **only** by Cloud
+Functions — never by the app: `codes`, `licenses/{uid}`, `audit_log`,
+`rate_limits`.
 
 The local device stays the source of truth. `src/lib/khata.ts` holds the ledger
 in `localStorage` and `src/lib/parties.ts` holds the party book; Firestore is a

@@ -7,7 +7,7 @@ import eslintConfigPrettier from "eslint-config-prettier/flat";
 import firebaseRulesPlugin from "@firebase/eslint-plugin-security-rules";
 
 export default tseslint.config(
-  { ignores: ["dist", "dist/**/*"] },
+  { ignores: ["dist", "dist/**/*", "functions/lib", "functions/lib/**/*"] },
   firebaseRulesPlugin.configs["flat/recommended"],
   {
     extends: [
