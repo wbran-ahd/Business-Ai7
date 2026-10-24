@@ -10,6 +10,14 @@ import { BrowserRouter, Route, Routes, useLocation } from "react-router";
 import "./styles/fonts.css";
 import "./index.css";
 
+// Optional observability. Both are silent no-ops until .env has a DSN/key, and
+// neither renders anything — the UI is untouched.
+import { initAnalytics } from "@/lib/analytics";
+import { initSentry } from "@/lib/sentry";
+
+initSentry();
+initAnalytics();
+
 // Lazy load route components for better code splitting
 const Landing = lazy(() => import("./pages/Landing.tsx"));
 const AuthPage = lazy(() => import("./pages/Auth.tsx"));
