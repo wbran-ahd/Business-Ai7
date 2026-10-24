@@ -219,7 +219,7 @@ export function useSync(data: DataState) {
   const upload = useCallback(async () => {
     const currentUid = auth.currentUser?.uid;
     if (!isAuthenticated || !currentUid || currentUid !== user?.uid) {
-      setStatus("کلاؤڈ سینک کے لیے گوگل اکاؤنٹ سے سائن ان درکار ہے۔ تمام ڈیٹا ڈیوائس پر محفوظ ہے۔");
+      setStatus("کلاؤڈ سینک کے لیے آن لائن شناخت درکار ہے۔ تمام ڈیٹا ڈیوائس پر محفوظ ہے۔");
       return false;
     }
 

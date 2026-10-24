@@ -10,7 +10,6 @@ confirms it aloud, watches the budget and turns the month into a report.
 | Screen | Path |
 | --- | --- |
 | Landing page | [/](https://site-f9ff23f69f4a4445a559ab1a2a03f28f.freebuff.page/) |
-| Sign in / sign up | [/auth](https://site-f9ff23f69f4a4445a559ab1a2a03f28f.freebuff.page/auth) |
 | Dashboard (protected) | [/dashboard](https://site-f9ff23f69f4a4445a559ab1a2a03f28f.freebuff.page/dashboard) |
 
 The deployment is the production bundle of `main`, served as a static SPA with
@@ -21,7 +20,7 @@ manifest live in [`deploy/`](deploy/). Build it the same way locally:
 bun install          # install dependencies (bun.lock is committed)
 bun run dev          # http://localhost:3000
 bun run typecheck    # tsc -b --noEmit
-bun run test         # ledger logic checks (205 assertions)
+bun run test         # ledger + scaffolding checks (275 assertions)
 VITE_PUBLIC_ORIGIN=https://<your-origin> bun run build   # production bundle in dist/
 ```
 
@@ -90,89 +89,30 @@ budgets, CSV round-trips, carry-forward ledgers and formatting. It needs no
 deployment, so it gates every push to `main` as well as every pull request.
 
 
-# Using Authentication (Important!)
+# Authentication
 
-You must follow these conventions when using authentication.
+Access is **QR / activation-code only**. Email, password and Google sign-in
+were removed; no sign-in form exists anywhere in the app.
 
-## Auth is already set up.
-
-Authentication runs on **Firebase Auth**. The sign-in surface is
-`src/hooks/use-auth.ts`, which wraps `onAuthStateChanged` and exposes Google,
-anonymous (guest) and email sign-in. The Firebase app itself is initialised in
-`src/lib/firebase.ts`.
-
-Google sign-in uses `signInWithPopup` with `GoogleAuthProvider`; guest sign-in
-uses `signInAnonymously` and falls back to a local session in `localStorage`
-when Firebase is unreachable. Firestore access is scoped per user under
-`users/{uid}/...`, and `src/lib/firestore-errors.ts` centralises the error
-shape.
+`src/hooks/use-auth.ts` observes Firebase's anonymous identity — the only way a
+client obtains a uid — and mirrors the `users/{uid}` profile document.
+`src/components/RequireAuth.tsx` renders the product only when that identity
+exists. The activation gate that checks a code and a license is built on top of
+those two files, so nothing in a component should ever redirect to a sign-in
+page.
 
 ## Using Auth in your components
 
-The `/auth` page is already set up to use auth. Navigate to `/auth` for all log in / sign up sequences.
-
 You MUST use this hook to get user data. Never do this yourself without the hook:
+
 ```typescript
 import { useAuth } from "@/hooks/use-auth";
 
-const { isLoading, isAuthenticated, user, signIn, signOut } = useAuth();
+const { isLoading, isAuthenticated, user, signOut } = useAuth();
 ```
 
-## Protected Routes
-
-The starter `/dashboard` route is protected with `RequireAuth`. Extend that page
-for the product's authenticated experience, and reuse `RequireAuth` when adding
-another protected route — do NOT hand-roll a redirect to `/auth`, since landing
-on a bare sign-in form with no explanation of what was blocked is confusing.
-
-`RequireAuth` states the block on the page the visitor asked for and sends them
-to `/auth?returnTo=<current route>` when they choose to sign in, so they come
-back to it. Pass `title` and `description` to say what the page is:
-
-```tsx
-<Route
-  path="/dashboard"
-  element={
-    <RequireAuth
-      title="Sign in to view your dashboard"
-      description="Your projects and settings live here."
-    >
-      <Dashboard />
-    </RequireAuth>
-  }
-/>
-```
-
-Pass `redirectImmediately` for a route where bouncing straight to `/auth` really
-is better.
-
-## Auth Page
-
-The auth page is defined in `src/pages/Auth.tsx`. Send sign-in and sign-up actions
-to `/auth`.
-
-## Authorization
-
-You can perform authorization checks on the frontend and backend.
-
-On the frontend, you can use the `useAuth` hook to get the current user's data and authentication state.
-
-You should also be protecting queries, mutations, and actions at the base level, checking for authorization securely.
-
-## Adding a redirect after auth
-
-The `/auth` route in `src/main.tsx` redirects to `/dashboard` by default. If the
-product's main authenticated route is different, update `redirectAfterAuth` to
-that route. A validated same-origin `returnTo` query parameter takes priority so
-users can resume the protected page they originally requested. Never leave an
-authenticated product redirecting back to the public landing page.
-
-## Complete authenticated products
-
-When the requested product implies accounts, a workspace, a dashboard, or other
-signed-in functionality, the task is not complete with only a landing page and
-auth form. Build the main authenticated experience, protect its route, and verify
-that signing in reaches it.
+Firestore access is scoped per uid under `users/{uid}/...`, and
+`src/lib/firestore-errors.ts` centralises the error shape.
 
 # Frontend Conventions
 

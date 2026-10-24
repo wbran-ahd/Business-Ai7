@@ -472,7 +472,7 @@ export default function SautiBaqaya() {
       return;
     }
     if (!sync.isAuthenticated) {
-      sync.setStatus("اے آئی کی صرف سرور پر انکرپٹ ہو کر محفوظ ہوتی ہے — پہلے سائن ان کریں۔");
+      sync.setStatus("اے آئی کی صرف سرور پر انکرپٹ ہو کر محفوظ ہوتی ہے — پہلے ایپ ایکٹیویٹ کریں۔");
       setSettingsOpen(false);
       return;
     }
@@ -484,7 +484,7 @@ export default function SautiBaqaya() {
 
   async function handleUpload() {
     if (!sync.isAuthenticated) {
-      sync.setStatus("پہلے سائن ان کریں تاکہ ڈیٹا کلاؤڈ پر محفوظ ہو۔");
+      sync.setStatus("پہلے ایپ ایکٹیویٹ کریں تاکہ ڈیٹا کلاؤڈ پر محفوظ ہو۔");
       return;
     }
     const ok = await sync.upload();

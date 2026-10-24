@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getAuth } from "firebase/auth";
 import { getFirestore, doc, getDocFromServer } from "firebase/firestore";
 import appletConfig from "../../firebase-applet-config.json";
 
@@ -31,7 +31,6 @@ export const db = firebaseConfig.firestoreDatabaseId
   ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
   : getFirestore(app);
 
-export const googleProvider = new GoogleAuthProvider();
 
 /**
  * Firebase App Check — optional and env-gated.

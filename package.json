@@ -61,7 +61,6 @@
     "embla-carousel-react": "^8.6.0",
     "firebase": "^13.0.0",
     "framer-motion": "^12.23.25",
-    "input-otp": "^1.4.2",
     "jose": "^6.2.12",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.555.0",

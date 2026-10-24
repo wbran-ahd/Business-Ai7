@@ -27,7 +27,7 @@ interface AppShellProps {
   navOpen: boolean;
   setNavOpen: (open: boolean) => void;
   isStaff: boolean;
-  user: { name?: string | null; email?: string | null } | null;
+  user: { name?: string | null } | null;
   isCurrentMonth: boolean;
   monthName: string;
   totals: {
@@ -112,7 +112,7 @@ export function AppShell({
     </nav>
   );
 
-  const userLabel = user?.name || user?.email || "مہمان صارف";
+  const userLabel = user?.name || "مہمان صارف";
   const renderUserBlock = (
     <div className="flex items-center gap-2.5 border-t border-white/10 pt-3">
       <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-sky-400/40 bg-sky-500/15 text-sm font-bold text-sky-200">
@@ -121,7 +121,7 @@ export function AppShell({
       <span className="min-w-0 flex-1 leading-tight">
         <span className="block truncate text-xs font-bold text-white/85">{userLabel}</span>
         <span className="block truncate font-sans text-[10px] text-white/40">
-          {user?.email ? user.email : "کلاؤڈ سینک فعال"}
+          کلاؤڈ سینک فعال
         </span>
       </span>
       <button
