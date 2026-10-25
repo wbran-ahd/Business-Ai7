@@ -74,7 +74,8 @@ export default defineConfig(({ mode }) => ({
           ],
           // Heavy optional libraries - separate chunks for better lazy loading
           'framer-motion': ['framer-motion'],
-          'charts': ['recharts'],
+          // Audit #9، #10: 'charts: recharts' والی manual chunk غائب —
+          // recharts مکمل حذف (مردا code)، اور ایک entry کا ایک ہی chunk ہے۔
           'forms': ['react-hook-form', '@hookform/resolvers', 'zod'],
         },
         // Optimize chunk size
@@ -106,6 +107,17 @@ export default defineConfig(({ mode }) => ({
       // never sees it. Without it here the first page load discovers it,
       // re-optimizes and full-reloads the preview mid-screenshot.
       '@vly-ai/integrations',
+      // Audit #6: every lazily-imported runtime dep is pre-bundled up front so
+      // the dep optimizer stops discovering things one wave at a time — each
+      // discovery re-ran the optimizer, bumped the browser hash and made every
+      // already-transformed module 504 mid-session (the white preview bug).
+      'firebase/app',
+      'firebase/auth',
+      'firebase/firestore',
+      'firebase/functions',
+      'firebase/app-check',
+      'qrcode',
+      'sonner',
     ],
   },
   // Performance hints

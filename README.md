@@ -10,7 +10,6 @@ confirms it aloud, watches the budget and turns the month into a report.
 | Screen | Path |
 | --- | --- |
 | Landing page | [/](https://site-f9ff23f69f4a4445a559ab1a2a03f28f.freebuff.page/) |
-| Sign in / sign up | [/auth](https://site-f9ff23f69f4a4445a559ab1a2a03f28f.freebuff.page/auth) |
 | Dashboard (protected) | [/dashboard](https://site-f9ff23f69f4a4445a559ab1a2a03f28f.freebuff.page/dashboard) |
 
 The deployment is the production bundle of `main`, served as a static SPA with
@@ -21,7 +20,7 @@ manifest live in [`deploy/`](deploy/). Build it the same way locally:
 bun install          # install dependencies (bun.lock is committed)
 bun run dev          # http://localhost:3000
 bun run typecheck    # tsc -b --noEmit
-bun run test         # ledger logic checks (205 assertions)
+bun run test         # ledger + scaffolding checks (275 assertions)
 VITE_PUBLIC_ORIGIN=https://<your-origin> bun run build   # production bundle in dist/
 ```
 
@@ -73,6 +72,7 @@ to configure or push to.
 | Variable | Purpose |
 | --- | --- |
 | `SAUTI_KEY_SECRET` | AES-GCM key that encrypts the stored Gemini API key; unset stores it unencrypted |
+| `ACTIVATION_PEPPER` | Cloud Functions secret that peppers voucher hashes and activation tokens (`firebase functions:secrets:set ACTIVATION_PEPPER`) |
 | `VLY_INTEGRATION_KEY` | VLY integration key for AI and payment calls |
 | `VLY_INTEGRATION_BASE_URL` | Integration gateway, defaults to `https://integrations.vly.ai` |
 
@@ -90,89 +90,30 @@ budgets, CSV round-trips, carry-forward ledgers and formatting. It needs no
 deployment, so it gates every push to `main` as well as every pull request.
 
 
-# Using Authentication (Important!)
+# Authentication
 
-You must follow these conventions when using authentication.
+Access is **QR / activation-code only**. Email, password and Google sign-in
+were removed; no sign-in form exists anywhere in the app.
 
-## Auth is already set up.
-
-Authentication runs on **Firebase Auth**. The sign-in surface is
-`src/hooks/use-auth.ts`, which wraps `onAuthStateChanged` and exposes Google,
-anonymous (guest) and email sign-in. The Firebase app itself is initialised in
-`src/lib/firebase.ts`.
-
-Google sign-in uses `signInWithPopup` with `GoogleAuthProvider`; guest sign-in
-uses `signInAnonymously` and falls back to a local session in `localStorage`
-when Firebase is unreachable. Firestore access is scoped per user under
-`users/{uid}/...`, and `src/lib/firestore-errors.ts` centralises the error
-shape.
+`src/hooks/use-auth.ts` observes Firebase's anonymous identity — the only way a
+client obtains a uid — and mirrors the `users/{uid}` profile document.
+`src/components/RequireAuth.tsx` renders the product only when that identity
+exists. The activation gate that checks a code and a license is built on top of
+those two files, so nothing in a component should ever redirect to a sign-in
+page.
 
 ## Using Auth in your components
 
-The `/auth` page is already set up to use auth. Navigate to `/auth` for all log in / sign up sequences.
-
 You MUST use this hook to get user data. Never do this yourself without the hook:
+
 ```typescript
 import { useAuth } from "@/hooks/use-auth";
 
-const { isLoading, isAuthenticated, user, signIn, signOut } = useAuth();
+const { isLoading, isAuthenticated, user, signOut } = useAuth();
 ```
 
-## Protected Routes
-
-The starter `/dashboard` route is protected with `RequireAuth`. Extend that page
-for the product's authenticated experience, and reuse `RequireAuth` when adding
-another protected route — do NOT hand-roll a redirect to `/auth`, since landing
-on a bare sign-in form with no explanation of what was blocked is confusing.
-
-`RequireAuth` states the block on the page the visitor asked for and sends them
-to `/auth?returnTo=<current route>` when they choose to sign in, so they come
-back to it. Pass `title` and `description` to say what the page is:
-
-```tsx
-<Route
-  path="/dashboard"
-  element={
-    <RequireAuth
-      title="Sign in to view your dashboard"
-      description="Your projects and settings live here."
-    >
-      <Dashboard />
-    </RequireAuth>
-  }
-/>
-```
-
-Pass `redirectImmediately` for a route where bouncing straight to `/auth` really
-is better.
-
-## Auth Page
-
-The auth page is defined in `src/pages/Auth.tsx`. Send sign-in and sign-up actions
-to `/auth`.
-
-## Authorization
-
-You can perform authorization checks on the frontend and backend.
-
-On the frontend, you can use the `useAuth` hook to get the current user's data and authentication state.
-
-You should also be protecting queries, mutations, and actions at the base level, checking for authorization securely.
-
-## Adding a redirect after auth
-
-The `/auth` route in `src/main.tsx` redirects to `/dashboard` by default. If the
-product's main authenticated route is different, update `redirectAfterAuth` to
-that route. A validated same-origin `returnTo` query parameter takes priority so
-users can resume the protected page they originally requested. Never leave an
-authenticated product redirecting back to the public landing page.
-
-## Complete authenticated products
-
-When the requested product implies accounts, a workspace, a dashboard, or other
-signed-in functionality, the task is not complete with only a landing page and
-auth form. Build the main authenticated experience, protect its route, and verify
-that signing in reaches it.
+Firestore access is scoped per uid under `users/{uid}/...`, and
+`src/lib/firestore-errors.ts` centralises the error shape.
 
 # Frontend Conventions
 
@@ -299,10 +240,12 @@ Always ensure your larger dialogs have a scroll in its content to ensure that it
 Ideally, instead of using a new page, use a Dialog instead. 
 # Using the Firebase backend
 
-This app has no server-side backend of its own. Firebase is the backend: Firebase
-Auth handles identity and Firestore holds the cloud copy of the ledger. There is
-no schema file to maintain and no deployment to push — Firestore rules govern
-access and are checked in at [`firestore.rules`](firestore.rules).
+This app has no HTTP server of its own. Firebase is the backend: Firebase
+Auth handles identity, Firestore holds the cloud copy of the ledger, and
+[`functions/`](functions/) holds the callable activation/licensing functions
+(`activate`, `checkStatus` and the admin callables) deployed through
+[`firebase.json`](firebase.json). Firestore rules govern access and are checked
+in at [`firestore.rules`](firestore.rules).
 
 ## Data model
 
@@ -317,6 +260,10 @@ read another user's rows:
 | `users/{uid}/sync/state` | sync version token | `src/hooks/use-sync.ts` |
 | `users/{uid}/parties` | customers and suppliers | `src/hooks/use-parties.ts` |
 | `users/{uid}/partyTxns` | shop (party) transactions | `src/hooks/use-parties.ts` |
+
+Licensing lives at the database root and is written **only** by Cloud
+Functions — never by the app: `codes`, `licenses/{uid}`, `audit_log`,
+`rate_limits`.
 
 The local device stays the source of truth. `src/lib/khata.ts` holds the ledger
 in `localStorage` and `src/lib/parties.ts` holds the party book; Firestore is a

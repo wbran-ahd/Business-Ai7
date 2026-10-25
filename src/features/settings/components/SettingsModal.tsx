@@ -131,8 +131,9 @@ export function SettingsModal({
       {/* Gemini key */}
       <div className="space-y-2 text-sm text-white/80 mb-5">
         <p>
-          ذہین جیمینی اے آئی کے لیے اپنی اے آئی کی (API Key) درج کریں — یہ سرور پر
-          انکرپٹ ہو کر محفوظ ہوتی ہے، اس لیے سائن ان ضروری ہے:
+          ذہین جیمینی اے آئی کے لیے اپنی اے آئی کی (API Key) درج کریں — {t(
+            "geminiKeyIntro",
+          )}
         </p>
         <input
           type="password"
@@ -334,10 +335,10 @@ export function SettingsModal({
           </div>
         ) : (
           <a
-            href="/auth?returnTo=/dashboard"
+            href="/activate"
             className={`${smallBtn} w-full justify-center bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border-sky-500/40 no-underline`}
           >
-            <i className="fas fa-right-to-bracket"></i> سائن ان کریں تاکہ ڈیٹا کلاؤڈ پر رہے
+            <i className="fas fa-right-to-bracket"></i> ایکٹیویٹ کریں تاکہ ڈیٹا کلاؤڈ پر رہے
           </a>
         )}
         <p className="text-[11px] text-white/40 mt-2">ورژن: {cloudVersion}</p>

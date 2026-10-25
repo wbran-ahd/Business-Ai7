@@ -7,7 +7,6 @@
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string", "maxLength": 100 },
-        "email": { "type": "string", "format": "email", "maxLength": 200 },
         "isAnonymous": { "type": "boolean" },
         "createdAt": { "type": "number" }
       },

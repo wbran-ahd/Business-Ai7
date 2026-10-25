@@ -1,20 +1,28 @@
 import { type ReactNode } from "react";
 import { Mic, MicOff } from "lucide-react";
-import { PwaStatus } from "@/components/sauti/PwaStatus";
-import { BackupReminderBanner, BudgetAlertBanner } from "@/components/sauti/Alerts";
 import { QuickEntry } from "@/components/sauti/QuickEntry";
 import { HorizonArc } from "./HorizonArc";
 import { MetricBoxes } from "./MetricBoxes";
 import { t } from "@/lib/i18n";
-import { formatNumber, type DigitStyle, type EntryType } from "@/lib/khata";
+import {
+  type AccountKind,
+  type DigitStyle,
+  type EntryType,
+  type Prefs,
+} from "@/lib/khata";
+import type { BudgetStatus } from "@/lib/insights";
+import type { usePwa } from "@/hooks/use-pwa";
 
 interface LedgerVoiceCenterProps {
-  pwa: any;
+  /* Underscore-prefixed pass-throughs are intentionally unused here (the
+     eslint `^_` ignore pattern is the declared convention); the fields stay in
+     the interface so the caller continues to pass them unchanged. */
+  pwa: ReturnType<typeof usePwa>;
   backupDue: { due: boolean; days: number };
   onBackup: () => void;
   onSnoozeBackup: () => void;
   budgetDismissed: boolean;
-  budgetAlerts: any[];
+  budgetAlerts: BudgetStatus[];
   onDismissBudgetAlerts: () => void;
   totals: {
     carryForward: number;
@@ -25,16 +33,18 @@ interface LedgerVoiceCenterProps {
   };
   digitStyle?: DigitStyle;
   isCurrentMonth: boolean;
-  onOpenModal: (type: any) => void;
+  // MetricBoxes opens income/expense *and* the balance view — the union, not
+  // EntryType alone, is the truth this callback receives.
+  onOpenModal: (type: EntryType | "balance") => void;
   transcript: ReactNode;
   onUndo: () => void;
-  prefs: any;
+  prefs: Prefs;
   onQuickCommit: (input: {
     type: EntryType;
     amount: number;
     detail: string;
     category?: string;
-    account?: any;
+    account?: AccountKind;
   }) => boolean;
   voiceListening: boolean;
   onToggleVoice: () => void;
@@ -99,9 +109,14 @@ export function LedgerVoiceCenter({
             <div className="text-xs text-white/50">{t("micExample")}</div>
           </div>
 
-          {/* Transcript Display */}
+          {/* Transcript Display — aria-live so screen readers hear entries as
+              the voice engine confirms them (audit #34). */}
           {transcript && (
-            <div className="bg-black/40 border border-white/10 rounded-2xl p-3 text-center text-xs text-sky-200 animate-pulse">
+            <div
+              role="status"
+              aria-live="polite"
+              className="bg-black/40 border border-white/10 rounded-2xl p-3 text-center text-xs text-sky-200 animate-pulse"
+            >
               "{transcript}"
             </div>
           )}

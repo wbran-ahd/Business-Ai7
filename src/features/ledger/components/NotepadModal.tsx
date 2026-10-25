@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { type Entry, type EntryType, formatNumber, type DigitStyle, formatMonthName } from "@/lib/khata";
+import { type AccountKind, type Entry, type EntryType, formatNumber, type DigitStyle, formatMonthName } from "@/lib/khata";
 import { Modal } from "@/components/sauti/Modal";
 import { t } from "@/lib/i18n";
 import { Plus, Trash2, Edit3, Share2, AlertCircle, Check } from "lucide-react";
@@ -8,7 +8,7 @@ export type Draft = {
   amount: string;
   detail: string;
   category: string;
-  account?: any;
+  account?: AccountKind;
 };
 
 interface NotepadModalProps {
