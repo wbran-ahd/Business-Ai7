@@ -48,6 +48,13 @@ import {
   formatCode,
 } from "../src/lib/activation";
 import { DEVICE_ID_PATTERN, getDeviceId } from "../src/lib/device-id";
+import {
+  activationLink,
+  ADMIN_UID,
+  adminLoginErrorMessage,
+  isAdminUid,
+} from "../src/lib/admin";
+import { readFileSync } from "node:fs";
 
 let passed = 0;
 const failures: string[] = [];
@@ -348,6 +355,62 @@ function verifyActivation(): void {
 /* Run                                                                 */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Admin identity + panel helpers (audit #16).
+ *
+ * The whole admin model is one uid hard-coded in three places — the client
+ * gate (`src/lib/admin.ts`), the Firestore rules (`isAdmin()`) and the
+ * server gate (`functions/src/config.ts`). These checks read the actual files
+ * and fail if any copy drifts from the one in the client lib.
+ */
+function verifyAdmin(): void {
+  const uid = ADMIN_UID;
+  check("admin: admin uid looks non-trivial", uid.length >= 20);
+  check(
+    "admin: uid present in src/lib/admin.ts",
+    readFileSync("src/lib/admin.ts", "utf8").includes(uid),
+  );
+  check(
+    "admin: same uid hardcoded in firestore.rules (isAdmin)",
+    readFileSync("firestore.rules", "utf8").includes(uid),
+  );
+  check(
+    "admin: same uid hardcoded in functions/src/config.ts",
+    readFileSync("functions/src/config.ts", "utf8").includes(uid),
+  );
+  check("admin: isAdminUid accepts owner", isAdminUid(uid) === true);
+  check("admin: isAdminUid rejects anyone else", isAdminUid("a".repeat(28)) === false);
+  check("admin: isAdminUid rejects empty", isAdminUid("") === false);
+
+  // In plain Node/Bun there is no window, so `publicOrigin("")` resolves to
+  // the fallback and the link is origin-relative — assert the shape, not the
+  // host (in the browser it is the full absolute URL).
+  const link = activationLink("SAUTI-ABCD-EFGH-2345");
+  check(
+    "admin: activationLink ends with /activate?c=<code>",
+    link.endsWith("/activate?c=SAUTI-ABCD-EFGH-2345"),
+    link,
+  );
+
+  const mapped = adminLoginErrorMessage({ code: "auth/invalid-email" });
+  check("admin: login error copy is Urdu, not the raw SDK code", mapped.length > 0 && !mapped.startsWith("auth/"));
+  const passthrough = adminLoginErrorMessage({
+    code: "functions/not-found",
+    message: "یہ کوڈ درست نہیں ہے۔",
+  });
+  check(
+    "admin: server Urdu message passes through unchanged",
+    passthrough === "یہ کوڈ درست نہیں ہے۔",
+    passthrough,
+  );
+  check(
+    "admin: unknown auth/* still yields readable fallback",
+    adminLoginErrorMessage({ code: "auth/brand-new-code" }).length > 0,
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
 async function main(): Promise<void> {
   await verifySentry();
   await verifyAnalytics();
@@ -355,6 +418,7 @@ async function main(): Promise<void> {
   await verifyModeReader();
   verifyHook();
   verifyActivation();
+  verifyAdmin();
 
   console.log(`\n${passed} checks passed, ${failures.length} failed.`);
   if (failures.length > 0) {

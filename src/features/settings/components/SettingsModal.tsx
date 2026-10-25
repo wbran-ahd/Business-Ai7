@@ -131,8 +131,9 @@ export function SettingsModal({
       {/* Gemini key */}
       <div className="space-y-2 text-sm text-white/80 mb-5">
         <p>
-          ذہین جیمینی اے آئی کے لیے اپنی اے آئی کی (API Key) درج کریں — یہ سرور پر
-          انکرپٹ ہو کر محفوظ ہوتی ہے، اس لیے پہلے ایپ ایکٹیویٹ کرنا ضروری ہے:
+          ذہین جیمینی اے آئی کے لیے اپنی اے آئی کی (API Key) درج کریں — {t(
+            "geminiKeyIntro",
+          )}
         </p>
         <input
           type="password"

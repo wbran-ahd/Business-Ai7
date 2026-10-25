@@ -3,6 +3,7 @@ import { Modal } from "@/components/sauti/Modal";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { InsightsPanel } from "@/components/sauti/InsightsPanel";
 import { formatNumber, type DigitStyle, type AiInsight } from "@/lib/khata";
+import type { purchaseInsights } from "@/lib/insights";
 import { t } from "@/lib/i18n";
 
 const ChartsPanel = lazy(() => import("@/components/sauti/ChartsPanel"));
@@ -19,7 +20,7 @@ interface AnalyticsModalProps {
   };
   trend: Array<{ monthKey: string; income: number; expense: number }>;
   breakdown: Array<{ category: string; amount: number; percentage: number }>;
-  insights: any;
+  insights: ReturnType<typeof purchaseInsights>;
   alerts: Array<{ category: string; spent: number; limit: number }>;
   digitStyle: DigitStyle;
   aiHasKey: boolean;

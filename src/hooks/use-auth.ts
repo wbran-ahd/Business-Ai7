@@ -52,23 +52,12 @@ export function useAuth() {
       const mappedUser = mapUser(fbUser);
       setUser(mappedUser);
 
-      // One profile document per uid. Local-first: a failed profile write must
-      // never block the UI, because the ledger already lives on the device.
-      try {
-        const userRef = doc(db, "users", fbUser.uid);
-        const snap = await getDoc(userRef);
-        if (!snap.exists()) {
-          await setDoc(userRef, {
-            id: fbUser.uid,
-            name: mappedUser.name,
-            isAnonymous: fbUser.isAnonymous,
-            createdAt: Date.now(),
-          });
-        }
-      } catch {
-        // Offline or restricted mode — the ledger keeps working locally.
+      // Audit #26: only anonymous sessions need a profile document. The admin
+      // email account must not mint its own profile doc (and pay an write per
+      // sign-in) for a collection nothing reads for it.
+      if (fbUser.isAnonymous) {
+        await ensureUserProfile(fbUser, mappedUser);
       }
-
       setIsLoading(false);
     });
 
@@ -91,4 +80,22 @@ export function useAuth() {
     user,
     signOut,
   };
+}
+
+/** Writes the profile doc once per uid (local-first: failures never block). */
+async function ensureUserProfile(fbUser: FirebaseUser, mappedUser: AppUser) {
+  try {
+    const userRef = doc(db, "users", fbUser.uid);
+    const snap = await getDoc(userRef);
+    if (!snap.exists()) {
+      await setDoc(userRef, {
+        id: fbUser.uid,
+        name: mappedUser.name,
+        isAnonymous: fbUser.isAnonymous,
+        createdAt: Date.now(),
+      });
+    }
+  } catch {
+    // Offline or restricted mode — the ledger keeps working locally.
+  }
 }

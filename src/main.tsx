@@ -4,21 +4,37 @@ import { RequireAuth } from "@/components/RequireAuth";
 // Small guard (uid check only) — eager so the route can never flash unguarded.
 import { AdminRoute } from "./pages/admin/components/AdminRoute";
 import { VlyToolbar } from "../vly-toolbar-readonly.tsx";
-import { applyShareMeta } from "./lib/brand";
-import React, { StrictMode, useEffect, lazy, Suspense } from "react";
+import {
+  RouteLoading,
+  RouteSyncer,
+  RootErrorBoundary,
+  ToolbarErrorBoundary,
+} from "@/components/RoutePrimitives";
+import { StrictMode, lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, Route, Routes, useLocation } from "react-router";
+import { BrowserRouter, Route, Routes } from "react-router";
 // Self-hosted fonts first, so the @font-face rules exist before the theme CSS.
 import "./styles/fonts.css";
 import "./index.css";
 
 // Optional observability. Both are silent no-ops until .env has a DSN/key, and
-// neither renders anything — the UI is untouched.
-import { initAnalytics } from "@/lib/analytics";
-import { initSentry } from "@/lib/sentry";
+// neither renders anything — the UI is untouched. Audit #32: they no longer sit
+// in the synchronous boot path; each bundle loads itself after first paint and
+// initialises then, so the ledger paints first even on a slow phone.
+initObservability();
 
-initSentry();
-initAnalytics();
+function initObservability() {
+  const afterPaint = () => {
+    void import("@/lib/sentry").then((module) => module.initSentry());
+    void import("@/lib/analytics").then((module) => module.initAnalytics());
+  };
+  if (typeof window !== "undefined" && window.requestAnimationFrame) {
+    // Double rAF === after first paint, before user input settles.
+    window.requestAnimationFrame(() => window.requestAnimationFrame(afterPaint));
+  } else {
+    setTimeout(afterPaint, 0);
+  }
+}
 
 // Lazy load route components for better code splitting
 const Landing = lazy(() => import("./pages/Landing.tsx"));
@@ -28,98 +44,9 @@ const AdminLogin = lazy(() => import("./pages/admin/AdminLogin.tsx"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 
-// Simple loading fallback for route transitions
-function RouteLoading() {
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-pulse text-muted-foreground">Loading...</div>
-    </div>
-  );
-}
-
-/** Silent error boundary — if VlyToolbar crashes it renders nothing instead of
- *  crashing the whole app (e.g. hook errors in the browser runtime). */
-class ToolbarErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean }
-> {
-  state = { hasError: false };
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-  componentDidCatch(err: Error) {
-    console.warn("[VlyToolbar] Caught error, toolbar disabled:", err.message);
-  }
-  render() {
-    return this.state.hasError ? null : this.props.children;
-  }
-}
-
-/** Hard guard so runtime errors never leave the preview as a blank page. */
-class RootErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean; message: string; stack: string }
-> {
-  state = { hasError: false, message: "", stack: "" };
-  static getDerivedStateFromError(error: Error) {
-    return {
-      hasError: true,
-      message: error.message || "Unknown runtime error",
-      stack: error.stack || "",
-    };
-  }
-  componentDidCatch(err: Error) {
-    console.error("[Preview] Root crash:", err);
-  }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-background text-foreground p-6">
-          <div className="max-w-lg text-center">
-            <p className="text-sm font-semibold">Preview runtime error</p>
-            <p className="mt-2 text-xs text-muted-foreground break-words">
-              {this.state.message}
-            </p>
-            {this.state.stack && (
-              <pre className="mt-3 text-left text-[10px] leading-4 text-muted-foreground/80 max-h-40 overflow-auto rounded border border-border/60 p-2">
-                {this.state.stack}
-              </pre>
-            )}
-          </div>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
-function RouteSyncer() {
-  const location = useLocation();
-
-  useEffect(() => {
-    applyShareMeta();
-  }, []);
-
-  useEffect(() => {
-    window.parent.postMessage(
-      { type: "iframe-route-change", path: location.pathname },
-      "*",
-    );
-  }, [location.pathname]);
-
-  useEffect(() => {
-    function handleMessage(event: MessageEvent) {
-      if (event.data?.type === "navigate") {
-        if (event.data.direction === "back") window.history.back();
-        if (event.data.direction === "forward") window.history.forward();
-      }
-    }
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, []);
-
-  return null;
-}
+// روٹ لوڈنگ فال بیک، error boundaries اور RouteSyncer اب RoutePrimitives.tsx
+// میں ہیں — یہ فائل صرف روٹس اور نیویگیشن وائرنگ رکھتی ہے
+// (react-refresh/only-export-components کا اصل حل، آڈٹ #15)۔
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

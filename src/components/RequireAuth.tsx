@@ -12,7 +12,8 @@ import type { ReactNode } from "react";
  * `use-license` starts) and for that uid's licence answer:
  *
  * - identity not ready / licence still loading → spinner
- * - no identity → nothing (the activation screen is the entry point)
+ * - no identity → `/activate` (never a blank screen: the activation screen is
+ *   the entry point, so it stays reachable without a session)
  * - definitively unlicensed (`missing`, `expired`, `revoked`) → `/activate`
  * - network failure or rate limit → let the app through: local-first, and
  *   Firestore rules still enforce the licence server-side.
@@ -29,7 +30,12 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!isAuthenticated) return null;
+  // Previously this returned `null`, which painted a blank page whenever the
+  // anonymous session was still missing (e.g. Firebase sign-in blocked) — the
+  // white screen the audit carried as #5. RedirectTo /activate now.
+  if (!isAuthenticated) {
+    return <Navigate to="/activate" replace />;
+  }
 
   if (phase === "missing" || phase === "expired" || phase === "revoked") {
     return <Navigate to="/activate" replace />;

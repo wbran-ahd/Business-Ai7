@@ -72,6 +72,7 @@ import {
   nextBudgetNotice,
 } from "@/lib/budget-notices";
 import {
+  type AccountKind,
   buildCsv,
   dedupeEntries,
   detectCategory,
@@ -124,7 +125,11 @@ export default function SautiBaqaya() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
-  const [historyType, setHistoryType] = useState<EntryType | null>(null);
+  // "balance" is the read-only متوسط view MetricBoxes opens — NotepadModal's
+  // actual prop type (EntryType | "balance" | null) is the truth here.
+  const [historyType, setHistoryType] = useState<EntryType | "balance" | null>(
+    null,
+  );
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [uploadConfirmOpen, setUploadConfirmOpen] = useState(false);
@@ -175,15 +180,19 @@ export default function SautiBaqaya() {
       khata.undo();
       return true;
     },
-    onAskAi: (question) => {
-      void ai.runAi(question);
+    onAskAi: () => {
+      void ai.runAi();
     },
     ttsEnabled: khata.prefs.ttsEnabled,
     ttsRate: khata.prefs.ttsRate,
   });
 
-  // Keep announcer ref fresh
-  announceRef.current = voice.announce;
+  // Keep announcer ref fresh (assignments that touched the ref during render
+  // are the exact pattern the react-hooks/refs rule flags; effect timing gives
+  // the same freshness without reading refs mid-render).
+  useEffect(() => {
+    announceRef.current = voice.announce;
+  });
 
   function handleUndoButton() {
     const removed = khata.data.undoStack.length > 0;
@@ -245,7 +254,10 @@ export default function SautiBaqaya() {
   function handleTourAction(step: OnboardingStep) {
     setOnboardingOpen(false);
     if (step.id === "shop") openShop("customers");
-    else if (step.id === "backup") setSettingsOpen(true);
+    else if (step.id === "backup") {
+      pushOverlayHistory();
+      setSettingsOpen(true);
+    }
     track("onboarding_action", { step: step.id });
   }
 
@@ -301,7 +313,10 @@ export default function SautiBaqaya() {
   }
 
   /* ---- Ledger modal triggers ------------------------------------------- */
-  function openModal(type: EntryType) {
+  // MetricBoxes opens the balance view too (NotepadModal's "balance" tab), so
+  // the panel type is the full union, not just EntryType.
+  function openModal(type: EntryType | "balance") {
+    pushOverlayHistory();
     setHistoryType(type);
     khata.clearValidationError();
   }
@@ -425,6 +440,12 @@ export default function SautiBaqaya() {
     event.target.value = "";
     if (!file) return;
 
+    // A 500 MB stray download must never reach FileReader (audit #31).
+    if (file.size > 2 * 1024 * 1024) {
+      setImportMsg("فائل 2 MB سے بڑی ہے — چھوٹی CSV/JSON فائل منتخب کریں۔");
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = () => {
       try {
@@ -460,6 +481,7 @@ export default function SautiBaqaya() {
   function openSettings() {
     localStorage.removeItem(LEGACY_API_KEY_STORAGE);
     setApiKeyDraft(sync.hasCloudKey ? "••••••••" : "");
+    pushOverlayHistory();
     setSettingsOpen(true);
     setImportMsg("");
     sync.setStatus("");
@@ -472,14 +494,14 @@ export default function SautiBaqaya() {
       return;
     }
     if (!sync.isAuthenticated) {
-      sync.setStatus("اے آئی کی صرف سرور پر انکرپٹ ہو کر محفوظ ہوتی ہے — پہلے ایپ ایکٹیویٹ کریں۔");
+      sync.setStatus(t("aiKeyNeedsActivation"));
       setSettingsOpen(false);
       return;
     }
     const ok = await sync.saveGeminiKey(key);
     localStorage.removeItem(LEGACY_API_KEY_STORAGE);
     setSettingsOpen(false);
-    if (ok) voice.speak("سیٹنگز اور کلاؤڈ اے آئی کی محفوظ ہو گئی ہے۔");
+    if (ok) voice.speak(t("aiKeySavedVoice"));
   }
 
   async function handleUpload() {
@@ -510,13 +532,18 @@ export default function SautiBaqaya() {
   });
 
   /* ---- Navigation orchestration ---------------------------------------- */
+  // "balance" panel سائیڈبار کی کوئی nav entry نہیں — وہ ledger view کے اوپر
+  // جانے والا modal ہے، اس لیے active highlight ledger پر ہی رہتا ہے؛
+  // income/expense کا highlight ویسا ہی برقرار ہے (pass-through)۔
   const activeView: NavId = shopOpen
     ? "shop"
     : analyticsOpen
       ? "analytics"
       : settingsOpen
         ? "settings"
-        : (historyType ?? "ledger");
+        : historyType === "balance"
+          ? "ledger"
+          : (historyType ?? "ledger");
 
   function goHome() {
     setHistoryType(null);
@@ -527,6 +554,7 @@ export default function SautiBaqaya() {
   }
 
   function openShop(tab: ShopTab) {
+    pushOverlayHistory();
     setShopTab(tab);
     setShopOpen(true);
     setHistoryType(null);
@@ -534,6 +562,26 @@ export default function SautiBaqaya() {
     setSettingsOpen(false);
     setNavOpen(false);
   }
+
+  /* ---- Back-button closes overlays (audit #20) ------------------------- */
+  // ایپ کے سب overlays اسی ایک روٹ پر کھلتے ہیں، اس ليے براؤزر back پہلے ایپ
+  // چھوڑ دیتا تھا۔ اب ہر overlay open ایک history entry push کرتا ہے اور back
+  // اس entry پر overlays بند کر دیتا ہے — ایپ کا صفحه ویسے ہی رہتا ہے۔
+  function pushOverlayHistory() {
+    window.history.pushState({ sautiOverlay: true }, "");
+  }
+
+  useEffect(() => {
+    function onPopState() {
+      setHistoryType(null);
+      setAnalyticsOpen(false);
+      setSettingsOpen(false);
+      setShopOpen(false);
+      setNavOpen(false);
+    }
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   async function handleSignOut() {
     try {
@@ -549,6 +597,7 @@ export default function SautiBaqaya() {
     } else if (id === "income" || id === "expense") {
       openModal(id);
     } else if (id === "analytics") {
+      pushOverlayHistory();
       setAnalyticsOpen(true);
     } else if (id === "shop") {
       openShop("customers");
@@ -593,14 +642,21 @@ export default function SautiBaqaya() {
           onSelectMonth={khata.setActiveMonth}
           aiBusy={ai.aiBusy}
           onRunAiOrAdvice={() => void ai.runAi()}
-          onOpenAnalytics={() => setAnalyticsOpen(true)}
+          onOpenAnalytics={() => {
+            pushOverlayHistory();
+            setAnalyticsOpen(true);
+          }}
           onOpenShop={() => openShop("customers")}
           isStaff={staff.isStaff}
-          onOpenExport={() => setExportOpen(true)}
+          onOpenExport={() => {
+            pushOverlayHistory();
+            setExportOpen(true);
+          }}
           onOpenSettings={openSettings}
           onUnlockStaff={() => {
             staff.clearError();
             setPinMode("unlock");
+            pushOverlayHistory();
             setPinOpen(true);
           }}
           onExportCsv={exportData}
@@ -633,7 +689,7 @@ export default function SautiBaqaya() {
               amount: number;
               detail: string;
               category?: string;
-              account?: any;
+              account?: AccountKind;
             }) => {
               const ok = khata.addEntry({
                 type: input.type,
@@ -739,6 +795,7 @@ export default function SautiBaqaya() {
         onOpenPin={(mode: PinMode) => {
           staff.clearError();
           setPinMode(mode);
+          pushOverlayHistory();
           setPinOpen(true);
         }}
         onLockSalesman={() => {

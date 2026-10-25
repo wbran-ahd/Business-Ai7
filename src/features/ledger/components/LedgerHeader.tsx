@@ -1,6 +1,6 @@
 import { formatMonthName } from "@/lib/khata";
 import { t } from "@/lib/i18n";
-import { Download, Mic, ShieldAlert, Sparkles, Store, Settings, HelpCircle, BarChart3 } from "lucide-react";
+import { ShieldAlert, Sparkles, Store, Settings, BarChart3 } from "lucide-react";
 
 interface LedgerHeaderProps {
   activeMonth: string;
@@ -29,12 +29,8 @@ export function LedgerHeader({
   onOpenAnalytics,
   onOpenShop,
   isStaff,
-  onOpenExport,
   onOpenSettings,
   onUnlockStaff,
-  onExportCsv,
-  listening,
-  onOpenHelp,
 }: LedgerHeaderProps) {
   return (
     <header className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 mb-6">

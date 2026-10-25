@@ -18,6 +18,8 @@ import {
   type RecurringEntry,
 } from "@/lib/khata";
 import { logError, logEvent } from "@/lib/logger";
+import { t } from "@/lib/i18n";
+import { AI_DAILY_LIMIT } from "@/lib/ai-limit";
 import {
   collection,
   doc,
@@ -363,11 +365,15 @@ export function useSync(data: DataState) {
           const settingsRef = doc(db, "users", currentUid, "settings", "current");
           await setDoc(settingsRef, { geminiKey: key, updatedAt: Date.now() }, { merge: true });
         }
-        setStatus("اے آئی کی محفوظ ہو گئی۔");
+        setStatus(t("aiKeySaved"));
         return true;
       } catch (error) {
         logError("sync", "saveGeminiKey failed", error);
-        setStatus(error instanceof Error ? error.message : "کی سیو نہیں ہو سکی۔");
+        setStatus(
+          error instanceof Error
+            ? error.message
+            : t("aiKeySaveFailed"),
+        );
         return false;
       }
     },
@@ -380,7 +386,10 @@ export function useSync(data: DataState) {
     cloudVersion,
     cloudCount: cloudRecords.length,
     aiHasKey: hasCloudKey,
-    aiRemaining: 25,
+    // Audit #8: the display budget was an inline magic number; it now comes
+    // from one documented constant. (Note: nothing server-side enforces it yet
+    // — see the residual-risk section of the audit report.)
+    aiRemaining: AI_DAILY_LIMIT,
     budgets,
     setBudgets,
     recurring,

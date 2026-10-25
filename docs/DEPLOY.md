@@ -238,3 +238,17 @@ bun run build && firebase deploy
 | پینل میں لسٹ خالی/error       | functions deploy ہوئے؟ قدم 5.3 — اور `ACTIVATION_PEPPER` سیٹ ہے؟ |
 
 مزید تفصیل: `docs/FIREBASE-SETUP.md` (Console setup) اور `docs/SETUP-ACCOUNTS.md`۔
+
+---
+
+## 🔐 سالانہ Pepper Rotation (آڈٹ #33)
+
+- نئی pepper پر hashes پرانے **unused واؤچرز** کے میل نہیں کھاته — rotate سے پہلے انہیں استعمال کروا دیں یا منسوخ کر دیں۔
+- کمانڈز:
+  ```bash
+  openssl rand -hex 32
+  firebase functions:secrets:set ACTIVATION_PEPPER
+  firebase deploy --only functions
+  ```
+- پہلے سے **active licences متاثر نہیں** ہوتے — نئے activation tokens نئی pepper سے sign ہوتے ہیں۔
+- سالانہ نظام: ہر سال rotate کريں، اور اگلے دن ایک نئ unused واؤچر بنا کر فون سے activate ٹیسٹ کريں۔

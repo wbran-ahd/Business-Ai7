@@ -17,12 +17,15 @@ import { getDeviceId } from "@/lib/device-id";
 const FIELD_ALLOWED = /[^A-Z0-9-]/g;
 
 /**
- * Reads `/activate?c=…` once, while the hook state is being initialised —
+ * Reads `/activate?c=…` or `/activate#c=…` (audit #18: hash payloads are
+ * never sent to any server) once, while the hook state is being initialised —
  * no effect, no second render. Returns `""` when there is no payload.
  */
 function readQrCode(): string {
   if (typeof window === "undefined") return "";
-  const raw = new URLSearchParams(window.location.search).get("c");
+  const fromHash = /[#&]c=([^&]+)/.exec(window.location.hash);
+  const raw =
+    fromHash?.[1] ?? new URLSearchParams(window.location.search).get("c") ?? "";
   return raw ? formatCode(raw) : "";
 }
 
@@ -42,7 +45,7 @@ export function useActivation() {
   useEffect(() => {
     if (!cameFromQr) return;
     navigate(
-      { pathname: window.location.pathname, search: "" },
+      { pathname: window.location.pathname, search: "", hash: "" },
       { replace: true },
     );
   }, [cameFromQr, navigate]);

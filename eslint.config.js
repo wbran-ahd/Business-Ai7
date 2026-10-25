@@ -26,6 +26,13 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      // A leading underscore is the project's established convention for an
+      // intentionally-unused variable or argument (see LedgerVoiceCenter's
+      // `_pwa` passthrough) — it is declared intent, not a typo to silence.
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
       "react-refresh/only-export-components": [
         "warn",
         { allowConstantExport: true },

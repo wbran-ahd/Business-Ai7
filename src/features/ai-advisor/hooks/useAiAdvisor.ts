@@ -18,7 +18,10 @@ export function useAiAdvisor({ monthName, totals, breakdown, announce }: UseAiAd
   const [aiBusy, setAiBusy] = useState(false);
   const [insight, setInsight] = useState<AiInsight | null>(null);
 
-  const runAi = async (_question?: string) => {
+  // The stub answers a fixed monthly brief; spoken questions arrive via
+  // `onAskAi` but only signal intent — carrying the raw question forward would
+  // imply the stub actually reads it.
+  const runAi = async () => {
     if (aiBusy) return;
     setAiBusy(true);
     try {
